@@ -69,7 +69,7 @@ impl WebVpnClient {
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
         if let Ok(resp) = self
             .client
-            .post("")
+            .post(ROOT_SSO.to_string() + "/sso/login;jsessionid=" + j_session_id.as_str())
             .headers(DEFAULT_HEADERS.clone())
             .header("Content-Type", "application/x-www-form-urlencoded")
             .form(&login_param)
