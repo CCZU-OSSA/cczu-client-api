@@ -20,4 +20,4 @@ reqwest = { version = "*", features = [
     "multipart",
     "native-tls-vendored",
 ] }
-log = "0.4.21"
+tokio = { version = "*", features = ["full"] }
