@@ -5,9 +5,19 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "cczu_webvpn_rs"
+path = "src/lib.rs"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+
 [dependencies]
 once_cell = "*"
 scraper = "*"
 base64 = "*"
-reqwest = { version = "*", features = ["cookies", "multipart"] }
+reqwest = { version = "*", features = [
+    "cookies",
+    "multipart",
+    "native-tls-vendored",
+] }
 log = "0.4.21"
