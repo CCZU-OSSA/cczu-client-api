@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use base64::alphabet::STANDARD;
 use reqwest::Client;
-use reqwest::cookie::{CookieStore, Jar};
+use reqwest::cookie::CookieStore;
 use scraper::{Html, Selector};
 use scraper::selectable::Selectable;
 
@@ -59,8 +59,9 @@ impl WebVpnClient {
         let mut login_param = Self::parse_hidden_values(dom);
         login_param.insert("username", self.user.clone());
         login_param.insert("password", STANDARD.encode(self.pwd.clone()));
+
         if let Ok(resp) = self.client
-            .post("")
+            .post(Self::ROOT_SSO.clone().to_string() + "/sso/login;jsessionid=" + j_session_id)
             .headers(DEFAULT_HEADERS.clone())
             .header("Content-Type", "application/x-www-form-urlencoded")
             .form(login_param)
