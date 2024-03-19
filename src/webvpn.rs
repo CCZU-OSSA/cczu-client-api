@@ -5,13 +5,13 @@ use reqwest::{
     Client,
 };
 use scraper::{Html, Selector};
-use std::{collections::HashMap, fmt::format, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 pub struct WebVpnClient {
     pub user: String,
     pub pwd: String,
     pub client: Client,
-    cookies: Arc<Jar>,
+    pub cookies: Arc<Jar>,
 }
 
 fn parse_hidden_values(html: String) -> HashMap<String, String> {
@@ -56,14 +56,14 @@ impl WebVpnClient {
             ROOT_SSO, ROOT_VPN
         );
 
-        if let Ok(resp) = self
+        if let Ok(response) = self
             .client
             .get(url)
             .headers(DEFAULT_HEADERS.clone())
             .send()
             .await
         {
-            if let Some(cookie) = &resp
+            if let Some(cookie) = &response
                 .cookies()
                 .filter(|cookie| cookie.name() == "JSESSIONID")
                 .collect::<Vec<Cookie>>()
@@ -72,7 +72,7 @@ impl WebVpnClient {
                 j_session_id = cookie.value().into();
             }
 
-            if let Ok(text) = &resp.text().await {
+            if let Ok(text) = &response.text().await {
                 dom = text.into();
             }
         }
@@ -84,7 +84,7 @@ impl WebVpnClient {
         let mut login_param = parse_hidden_values(dom);
         login_param.insert("username".into(), self.user.clone());
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
-        if let Ok(resp) = self
+        if let Ok(response) = self
             .client
             .post(format!(
                 "{}/sso/login;jsessionid={}",
@@ -96,9 +96,9 @@ impl WebVpnClient {
             .send()
             .await
         {
-            // Cookie...
+            todo!("Cookies")
         }
 
-        Err("Sso登录失败，请尝试普通登录...".into())
+        Err("SSO 登录失败，请尝试普通登录...".into())
     }
 }
