@@ -2,7 +2,8 @@ use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{
     cookie::{Cookie, Jar},
-    Client,
+    redirect::Policy,
+    Client, Url,
 };
 use scraper::{Html, Selector};
 use std::{collections::HashMap, sync::Arc};
@@ -38,6 +39,7 @@ impl WebVpnClient {
             pwd: pwd.to_string(),
             client: Client::builder()
                 .cookie_provider(cookies.clone())
+                .redirect(Policy::none())
                 .build()
                 .unwrap(),
             cookies: cookies.clone(),
@@ -58,7 +60,7 @@ impl WebVpnClient {
 
         if let Ok(response) = self
             .client
-            .get(url)
+            .get(url.clone())
             .headers(DEFAULT_HEADERS.clone())
             .send()
             .await
@@ -78,12 +80,21 @@ impl WebVpnClient {
         }
 
         if j_session_id.is_empty() || dom.is_empty() {
+            println!("j_session_id: {};dom: {}", j_session_id, dom);
             return Err("Sso登录失败(无法访问)，请尝试普通登录...".into());
         }
 
         let mut login_param = parse_hidden_values(dom);
         login_param.insert("username".into(), self.user.clone());
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
+        self.cookies.add_cookie_str(
+            &format!(
+                "JSESSIONID={}; enter_login_url={}",
+                j_session_id,
+                urlencoding::encode(&url.clone())
+            ),
+            &ROOT_SSO.parse::<Url>().unwrap(),
+        );
         if let Ok(response) = self
             .client
             .post(format!(
@@ -96,7 +107,36 @@ impl WebVpnClient {
             .send()
             .await
         {
-            todo!("Cookies")
+            let u = response
+                .headers()
+                .get("Location")
+                .unwrap()
+                .to_str()
+                .unwrap();
+            println!("{}", u);
+            if response.status() == 302 {
+                if let Ok(response) = self
+                    .client
+                    .get(u)
+                    .headers(DEFAULT_HEADERS.clone())
+                    .send()
+                    .await
+                {
+                    if let Some(cookie) = &response
+                        .cookies()
+                        .filter(|cookie| cookie.name() == "clientInfo")
+                        .collect::<Vec<Cookie>>()
+                        .first()
+                    {
+                        let json =
+                            String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
+                                .unwrap();
+                        return Ok(json);
+                    }
+                } else {
+                    println!("登录失败")
+                }
+            }
         }
 
         Err("SSO 登录失败，请尝试普通登录...".into())

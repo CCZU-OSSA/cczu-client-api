@@ -16,3 +16,7 @@ reqwest = { version = "*", features = [
     "native-tls-vendored",
 ] }
 tokio = { version = "*", features = ["full"] }
+aes = "*"
+cbc = "*"
+urlencoding = "*"
+rand = "*"
