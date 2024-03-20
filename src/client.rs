@@ -1,6 +1,8 @@
 use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
-use crate::types::LoginCallback;
+use crate::types::{CbcAES128Enc, LoginCallback};
+use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
+use rand::Rng;
 use reqwest::{
     cookie::{Cookie, Jar},
     redirect::Policy,
@@ -140,5 +142,56 @@ impl WebVpnClient {
         }
 
         Err("SSO 登录失败，请尝试普通登录...".into())
+    }
+
+    pub async fn common_login(&self) {
+        let url = format!("{}/enlink/sso/login/submit", ROOT_VPN);
+        const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let mut rng = rand::thread_rng();
+        let mut token = (0..16)
+            .map(|_| {
+                let idx = rng.gen_range(0..CHARSET.len());
+                CHARSET[idx] as u8
+            })
+            .collect::<Vec<u8>>();
+        let iv = token.clone();
+        token.reverse();
+        let key = token.clone();
+        let encryptor = CbcAES128Enc::new(key.as_slice().into(), iv.as_slice().into());
+        let mut raw_pwd = self.pwd.clone();
+        let pwd = unsafe { raw_pwd.as_bytes_mut() };
+        let encrypt_buf = encryptor
+            .encrypt_padded_mut::<Pkcs7>(pwd, pwd.len())
+            .unwrap();
+        let encrypt_pwd = BASE64_STANDARD.encode(encrypt_buf);
+        let mut data: HashMap<&'static str, String> = HashMap::new();
+        data.insert("username", self.user.clone());
+        data.insert("password", encrypt_pwd);
+        data.insert(
+            "token",
+            token.iter().map(|char| char.clone() as char).collect(),
+        );
+        data.insert("language", "zh-CN,zh;q=0.9,en;q=0.8".into());
+        // Add Cookies here
+        // self.cookies
+        //    .add_cookie_str(cookie, &url.parse::<Url>().unwrap());
+        if let Ok(response) = self
+            .client
+            .post(url)
+            .header("Refer", format!("{}/enlink/sso/login", ROOT_VPN))
+            .header("Origin", ROOT_VPN)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .form(&data)
+            .send()
+            .await
+        {
+            if response.status() == StatusCode::FOUND {
+                todo!("Handle 302")
+            }
+        };
+    }
+
+    pub async fn login(&self) {
+        todo!("Call the `common_login` / `sso_login`")
     }
 }

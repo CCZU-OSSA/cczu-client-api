@@ -1,10 +1,11 @@
+pub mod client;
 pub mod fields;
 pub mod types;
-pub mod webvpn;
 
 #[cfg(test)]
 mod test {
-    use super::webvpn::WebVpnClient;
+    use rand::Rng;
+    use super::client::WebVpnClient;
 
     #[tokio::test]
     async fn login_test() {
@@ -13,5 +14,17 @@ mod test {
             Ok(json) => println!("{:?}", json),
             Err(message) => println!("{}", message),
         };
+    }
+    #[test]
+    fn random_string_test() {
+        const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let mut rng = rand::thread_rng();
+        let token: String = (0..16)
+            .map(|_| {
+                let idx = rng.gen_range(0..CHARSET.len());
+                CHARSET[idx] as char
+            })
+            .collect();
+        println!("{}", token)
     }
 }
