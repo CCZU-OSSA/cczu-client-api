@@ -20,3 +20,5 @@ aes = "*"
 cbc = "*"
 urlencoding = "*"
 rand = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"

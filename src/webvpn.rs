@@ -83,7 +83,6 @@ impl WebVpnClient {
 
         if j_session_id.is_empty() || dom.is_empty() {
             // println!("j_session_id: {};dom: {}", j_session_id, dom);
-            // println!("j_session_id: {};dom: {}", j_session_id, dom);
             return Err("Sso登录失败(无法访问)，请尝试普通登录...".into());
         }
 
