@@ -1,4 +1,5 @@
 use crate::client::UserClient;
+use crate::cookies_copy::CopyCookies;
 use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
@@ -6,15 +7,11 @@ use crate::types::{
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
-use reqwest::{
-    cookie::{Cookie, CookieStore},
-    redirect::Policy,
-    Client, StatusCode, Url,
-};
+use reqwest::Url;
+use reqwest::{cookie::Cookie, redirect::Policy, Client, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 use std::{collections::HashMap, sync::Arc};
-
 pub struct WebVpnClient {
     pub user: String,
     pub pwd: String,
@@ -56,7 +53,6 @@ impl WebVpnClient {
     /// SSO Login
     /// if Ok, return `ElinkUserInfo` else return Err(message)
     pub async fn sso_login(&self) -> Result<ElinkLoginInfo, String> {
-        let mut j_session_id = String::new();
         let mut dom = String::new();
 
         let url = format!(
@@ -71,23 +67,19 @@ impl WebVpnClient {
             .send()
             .await
         {
-            if let Some(cookie) = &response
-                .cookies()
-                .filter(|cookie| cookie.name() == "JSESSIONID")
-                .collect::<Vec<Cookie>>()
-                .first()
-            {
-                j_session_id = cookie.value().into();
-            }
-
             let text = response.text().await;
 
             if let Ok(text) = text {
                 dom = text;
             }
+
+            self.cookies.lock().unwrap().copy_cookies(
+                &url.parse::<Url>().unwrap(),
+                &ROOT_SSO.parse::<Url>().unwrap(),
+            )
         }
 
-        if j_session_id.is_empty() || dom.is_empty() {
+        if dom.is_empty() {
             // println!("j_session_id: {};dom: {}", j_session_id, dom);
             return Err("Sso登录失败(无法访问)，请尝试普通登录...".into());
         }
@@ -96,16 +88,11 @@ impl WebVpnClient {
         login_param.insert("username".into(), self.user.clone());
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
         //&format!(    "JSESSIONID={}; enter_login_url={}",    j_session_id,    urlencoding::encode(&url.clone()))
-        let store = self.cookies.lock().unwrap();
         //store.store_response_cookies(cookies, &ROOT_SSO.parse::<Url>().unwrap());
-        todo!("Store Cookies here");
 
         if let Ok(response) = self
             .client
-            .post(format!(
-                "{}/sso/login;jsessionid={}",
-                ROOT_SSO, j_session_id
-            ))
+            .post(format!("{}/sso/login", ROOT_SSO))
             .headers(DEFAULT_HEADERS.clone())
             .header("Content-Type", "application/x-www-form-urlencoded")
             .form(&login_param)

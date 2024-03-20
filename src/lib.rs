@@ -1,8 +1,8 @@
 pub mod client;
 pub mod fields;
-pub mod webvpn;
+pub mod cookies_copy;
 pub mod types;
-
+pub mod webvpn;
 #[cfg(test)]
 mod test {
     use super::webvpn::WebVpnClient;
