@@ -1,9 +1,10 @@
 use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
+use crate::types::LoginCallback;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{
     cookie::{Cookie, Jar},
     redirect::Policy,
-    Client, Url,
+    Client, StatusCode, Url,
 };
 use scraper::{Html, Selector};
 use std::{collections::HashMap, sync::Arc};
@@ -15,9 +16,9 @@ pub struct WebVpnClient {
     pub cookies: Arc<Jar>,
 }
 
-fn parse_hidden_values(html: String) -> HashMap<String, String> {
+fn parse_hidden_values(html: &str) -> HashMap<String, String> {
     let mut hidden_values = HashMap::new();
-    let dom = Html::parse_document(&*html);
+    let dom = Html::parse_document(html);
     let input_hidden_selector = Selector::parse(r#"input[type="hidden"]"#).unwrap();
     let tags_hidden = dom.select(&input_hidden_selector);
 
@@ -46,10 +47,9 @@ impl WebVpnClient {
         }
     }
 
-    /**
-     * SSO 登录
-     */
-    pub async fn sso_login(&self) -> Result<String, String> {
+    /// SSO Login
+    /// if Ok, return `LoginCallback` else return Err(message)
+    pub async fn sso_login(&self) -> Result<LoginCallback, String> {
         let mut j_session_id = String::new();
         let mut dom = String::new();
 
@@ -74,17 +74,20 @@ impl WebVpnClient {
                 j_session_id = cookie.value().into();
             }
 
-            if let Ok(text) = &response.text().await {
-                dom = text.into();
+            let text = response.text().await;
+
+            if let Ok(text) = text {
+                dom = text;
             }
         }
 
         if j_session_id.is_empty() || dom.is_empty() {
-            println!("j_session_id: {};dom: {}", j_session_id, dom);
+            // println!("j_session_id: {};dom: {}", j_session_id, dom);
+            // println!("j_session_id: {};dom: {}", j_session_id, dom);
             return Err("Sso登录失败(无法访问)，请尝试普通登录...".into());
         }
 
-        let mut login_param = parse_hidden_values(dom);
+        let mut login_param = parse_hidden_values(dom.as_str());
         login_param.insert("username".into(), self.user.clone());
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
         self.cookies.add_cookie_str(
@@ -107,17 +110,17 @@ impl WebVpnClient {
             .send()
             .await
         {
-            let u = response
+            let redirect_location = response
                 .headers()
                 .get("Location")
                 .unwrap()
                 .to_str()
                 .unwrap();
-            println!("{}", u);
-            if response.status() == 302 {
+            //println!("{}", redirect_location);
+            if response.status() == StatusCode::FOUND {
                 if let Ok(response) = self
                     .client
-                    .get(u)
+                    .get(redirect_location)
                     .headers(DEFAULT_HEADERS.clone())
                     .send()
                     .await
@@ -131,10 +134,8 @@ impl WebVpnClient {
                         let json =
                             String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
                                 .unwrap();
-                        return Ok(json);
+                        return Ok(serde_json::from_str(json.as_str()).unwrap());
                     }
-                } else {
-                    println!("登录失败")
                 }
             }
         }

@@ -1,4 +1,5 @@
 pub mod fields;
+pub mod types;
 pub mod webvpn;
 
 #[cfg(test)]
@@ -9,7 +10,7 @@ mod test {
     async fn login_test() {
         let client = WebVpnClient::new("学号", "密码");
         match client.sso_login().await {
-            Ok(json) => println!("{}", json),
+            Ok(json) => println!("{:?}", json),
             Err(message) => println!("{}", message),
         };
     }
