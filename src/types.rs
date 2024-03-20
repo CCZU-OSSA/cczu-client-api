@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct LoginCallback {
+pub struct ElinkUserInfo {
     pub username: String,
     pub sid: String,
     #[serde(alias = "userId")]

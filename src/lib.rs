@@ -4,13 +4,14 @@ pub mod types;
 
 #[cfg(test)]
 mod test {
-    use rand::Rng;
     use super::client::WebVpnClient;
+    use rand::Rng;
 
     #[tokio::test]
+
     async fn login_test() {
-        let client = WebVpnClient::new("学号", "密码");
-        match client.sso_login().await {
+        let client = WebVpnClient::new("账号", "密码");
+        match client.common_login().await {
             Ok(json) => println!("{:?}", json),
             Err(message) => println!("{}", message),
         };
