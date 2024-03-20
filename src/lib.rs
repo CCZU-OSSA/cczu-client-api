@@ -1,10 +1,11 @@
 pub mod client;
 pub mod fields;
+pub mod webvpn;
 pub mod types;
 
 #[cfg(test)]
 mod test {
-    use super::client::WebVpnClient;
+    use super::webvpn::WebVpnClient;
     use rand::Rng;
 
     #[tokio::test]
