@@ -5,11 +5,6 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "cczu_webvpn_rs"
-path = "src/lib.rs"
-crate-type = ["lib", "cdylib", "staticlib"]
-
 
 [dependencies]
 once_cell = "*"
