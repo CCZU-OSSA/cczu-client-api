@@ -81,14 +81,12 @@ impl WebVpnClient {
 
         if dom.is_empty() {
             // println!("j_session_id: {};dom: {}", j_session_id, dom);
-            return Err("Sso登录失败(无法访问)，请尝试普通登录...".into());
+            return Err("SSO 登录失败(无法访问)，请尝试普通登录...".into());
         }
 
         let mut login_param = parse_hidden_values(dom.as_str());
         login_param.insert("username".into(), self.user.clone());
         login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
-        //&format!(    "JSESSIONID={}; enter_login_url={}",    j_session_id,    urlencoding::encode(&url.clone()))
-        //store.store_response_cookies(cookies, &ROOT_SSO.parse::<Url>().unwrap());
 
         if let Ok(response) = self
             .client
@@ -106,26 +104,24 @@ impl WebVpnClient {
                     .unwrap()
                     .to_str()
                     .unwrap();
-                if response.status() == StatusCode::FOUND {
-                    if let Ok(response) = self
-                        .client
-                        .get(redirect_location)
-                        .headers(DEFAULT_HEADERS.clone())
-                        .send()
-                        .await
+                if let Ok(response) = self
+                    .client
+                    .get(redirect_location)
+                    .headers(DEFAULT_HEADERS.clone())
+                    .send()
+                    .await
+                {
+                    if let Some(cookie) = &response
+                        .cookies()
+                        .filter(|cookie| cookie.name() == "clientInfo")
+                        .collect::<Vec<Cookie>>()
+                        .first()
                     {
-                        if let Some(cookie) = &response
-                            .cookies()
-                            .filter(|cookie| cookie.name() == "clientInfo")
-                            .collect::<Vec<Cookie>>()
-                            .first()
-                        {
-                            let json =
-                                String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
-                                    .unwrap();
-                            //println!("{}", json);
-                            return Ok(serde_json::from_str(json.as_str()).unwrap());
-                        }
+                        let json =
+                            String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
+                                .unwrap();
+                        //println!("{}", json);
+                        return Ok(serde_json::from_str(json.as_str()).unwrap());
                     }
                 }
             }
