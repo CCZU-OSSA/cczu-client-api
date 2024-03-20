@@ -1,5 +1,7 @@
 use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
-use crate::types::{CbcAES128Enc, ElinkUserInfo};
+use crate::types::{
+    CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
+};
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
@@ -52,7 +54,7 @@ impl WebVpnClient {
 
     /// SSO Login
     /// if Ok, return `ElinkUserInfo` else return Err(message)
-    pub async fn sso_login(&self) -> Result<ElinkUserInfo, String> {
+    pub async fn sso_login(&self) -> Result<ElinkLoginInfo, String> {
         let mut j_session_id = String::new();
         let mut dom = String::new();
 
@@ -147,7 +149,7 @@ impl WebVpnClient {
         Err("SSO 登录失败，请尝试普通登录...".into())
     }
 
-    pub async fn common_login(&self) -> Result<ElinkUserInfo, String> {
+    pub async fn common_login(&self) -> Result<ElinkLoginInfo, String> {
         let url = format!("{}/enlink/sso/login/submit", ROOT_VPN);
         const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         let mut rng = rand::thread_rng();
@@ -187,6 +189,7 @@ impl WebVpnClient {
             .header("Refer", format!("{}/enlink/sso/login", ROOT_VPN))
             .header("Origin", ROOT_VPN)
             .header("Content-Type", "application/x-www-form-urlencoded")
+            .headers(DEFAULT_HEADERS.clone())
             .form(&data)
             .send()
             .await
@@ -209,5 +212,74 @@ impl WebVpnClient {
 
     pub async fn login(&self) {
         todo!("Call the `common_login` / `sso_login`")
+    }
+
+    pub async fn get_user_info(&self, user_id: String) -> Result<ElinkUserInfo, String> {
+        if let Ok(response) = self
+            .client
+            .get(format!(
+                "{}/enlink/api/client/user/findByUserId/{}",
+                ROOT_VPN, user_id
+            ))
+            .headers(DEFAULT_HEADERS.clone())
+            .send()
+            .await
+        {
+            if let Ok(json) = response.text().await {
+                return Ok(serde_json::from_str(json.as_str()).unwrap());
+            }
+        }
+        Err("获取失败，请稍后重试".into())
+    }
+
+    pub async fn get_tree_with_service(&self, user_id: String) -> Result<ElinkServiceInfo, String> {
+        let mut body = HashMap::new();
+        body.insert("nameLike", "");
+        body.insert("serviceNameLike", "");
+        body.insert("userId", user_id.as_str());
+        if let Ok(response) = self
+            .client
+            .post(format!(
+                "{}/enlink/api/client/service/group/treeWithService/",
+                ROOT_VPN
+            ))
+            .headers(DEFAULT_HEADERS.clone())
+            .header("Referer", format!("{}/enlink/", ROOT_VPN))
+            .header("Origin", ROOT_VPN)
+            .header("Content-Type", "application/json;charset=utf-8")
+            .body(serde_json::to_string(&body).unwrap())
+            .send()
+            .await
+        {
+            if let Ok(json) = response.text().await {
+                return Ok(serde_json::from_str(json.as_str()).unwrap());
+            }
+        }
+        Err("获取失败，请稍后重试".into())
+    }
+    pub async fn get_service_by_user(
+        &self,
+        user_id: String,
+    ) -> Result<ElinkUserServiceInfo, String> {
+        let mut param = HashMap::new();
+        param.insert("name", "");
+        if let Ok(response) = self
+            .client
+            .get(format!(
+                "{}/enlink/api/client/service/sucmp/findServiceByUserId/{}",
+                ROOT_VPN, user_id
+            ))
+            .headers(DEFAULT_HEADERS.clone())
+            .header("Referer", format!("{}/enlink/", ROOT_VPN))
+            .header("Origin", ROOT_VPN)
+            .query(&param)
+            .send()
+            .await
+        {
+            if let Ok(json) = response.text().await {
+                return Ok(serde_json::from_str(json.as_str()).unwrap());
+            }
+        }
+        Err("获取失败，请稍后重试".into())
     }
 }

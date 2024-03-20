@@ -12,7 +12,20 @@ mod test {
     async fn login_test() {
         let client = WebVpnClient::new("账号", "密码");
         match client.common_login().await {
-            Ok(json) => println!("{:?}", json),
+            Ok(json) => {
+                println!("{:?}", json);
+                match client.get_user_info(json.userid.clone().unwrap()).await {
+                    Ok(json) => println!("{:?}", json),
+                    Err(message) => println!("{}", message),
+                }
+                match client
+                    .get_service_by_user(json.userid.clone().unwrap())
+                    .await
+                {
+                    Ok(json) => println!("{:?}", json),
+                    Err(message) => println!("{}", message),
+                }
+            }
             Err(message) => println!("{}", message),
         };
     }
