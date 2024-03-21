@@ -1,5 +1,5 @@
 use crate::client::UserClient;
-use crate::cookies_copy::CopyCookies;
+use crate::cookies_io::CookiesIOExt;
 use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
@@ -76,7 +76,7 @@ impl WebVpnClient {
             self.cookies.lock().unwrap().copy_cookies(
                 &url.parse::<Url>().unwrap(),
                 &ROOT_SSO.parse::<Url>().unwrap(),
-            )
+            );
         }
 
         if dom.is_empty() {

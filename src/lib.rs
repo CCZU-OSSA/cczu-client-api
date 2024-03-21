@@ -1,6 +1,6 @@
 pub mod client;
 pub mod fields;
-pub mod cookies_copy;
+pub mod cookies_io;
 pub mod types;
 pub mod webvpn;
 #[cfg(test)]
