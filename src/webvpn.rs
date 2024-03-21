@@ -17,6 +17,7 @@ pub struct WebVpnClient {
     pub pwd: String,
     pub client: Client,
     pub cookies: Arc<CookieStoreMutex>,
+    login_info: Option<ElinkLoginInfo>,
 }
 
 fn parse_hidden_values(html: &str) -> HashMap<String, String> {
@@ -47,12 +48,13 @@ impl WebVpnClient {
                 .build()
                 .unwrap(),
             cookies: cookies.clone(),
+            login_info: None,
         }
     }
 
     /// SSO Login
     /// if Ok, return `ElinkUserInfo` else return Err(message)
-    pub async fn sso_login(&self) -> Result<ElinkLoginInfo, String> {
+    pub async fn sso_login(&mut self) -> Result<ElinkLoginInfo, String> {
         let mut dom = String::new();
 
         let url = format!(
@@ -121,7 +123,9 @@ impl WebVpnClient {
                             String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
                                 .unwrap();
                         //println!("{}", json);
-                        return Ok(serde_json::from_str(json.as_str()).unwrap());
+                        let data: ElinkLoginInfo = serde_json::from_str(json.as_str()).unwrap();
+                        self.login_info = Some(data.clone());
+                        return Ok(data);
                     }
                 }
             }
@@ -130,7 +134,7 @@ impl WebVpnClient {
         Err("SSO 登录失败，请尝试普通登录...".into())
     }
 
-    pub async fn common_login(&self) -> Result<ElinkLoginInfo, String> {
+    pub async fn common_login(&mut self) -> Result<ElinkLoginInfo, String> {
         let url = format!("{}/enlink/sso/login/submit", ROOT_VPN);
         const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         let mut rng = rand::thread_rng();
@@ -184,19 +188,33 @@ impl WebVpnClient {
                 {
                     let json =
                         String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
-                    return Ok(serde_json::from_str(json.as_str()).unwrap());
+                    let data: ElinkLoginInfo = serde_json::from_str(json.as_str()).unwrap();
+                    self.login_info = Some(data.clone());
+                    return Ok(data);
                 }
             }
         };
         Err("普通登录失败，请检查账号密码是否错误...".into())
     }
 
-    pub async fn get_user_info(&self, user_id: String) -> Result<ElinkUserInfo, String> {
+    /// Please Call after login
+    pub fn user_id(&self) -> String {
+        self.login_info
+            .clone()
+            .expect("Please login first.")
+            .userid
+            .unwrap()
+            .into()
+    }
+
+    /// Please Call after login
+    pub async fn get_user_info(&self) -> Result<ElinkUserInfo, String> {
         if let Ok(response) = self
             .client
             .get(format!(
                 "{}/enlink/api/client/user/findByUserId/{}",
-                ROOT_VPN, user_id
+                ROOT_VPN,
+                self.user_id()
             ))
             .headers(DEFAULT_HEADERS.clone())
             .send()
@@ -209,11 +227,12 @@ impl WebVpnClient {
         Err("获取失败，请稍后重试".into())
     }
 
-    pub async fn get_tree_with_service(&self, user_id: String) -> Result<ElinkServiceInfo, String> {
+    /// Please Call after login
+    pub async fn get_tree_with_service(&self) -> Result<ElinkServiceInfo, String> {
         let mut body = HashMap::new();
-        body.insert("nameLike", "");
-        body.insert("serviceNameLike", "");
-        body.insert("userId", user_id.as_str());
+        body.insert("nameLike", "".to_string());
+        body.insert("serviceNameLike", "".to_string());
+        body.insert("userId", self.user_id());
         if let Ok(response) = self
             .client
             .post(format!(
@@ -234,17 +253,16 @@ impl WebVpnClient {
         }
         Err("获取失败，请稍后重试".into())
     }
-    pub async fn get_service_by_user(
-        &self,
-        user_id: String,
-    ) -> Result<ElinkUserServiceInfo, String> {
+
+    pub async fn get_service_by_user(&self) -> Result<ElinkUserServiceInfo, String> {
         let mut param = HashMap::new();
         param.insert("name", "");
         if let Ok(response) = self
             .client
             .get(format!(
                 "{}/enlink/api/client/service/sucmp/findServiceByUserId/{}",
-                ROOT_VPN, user_id
+                ROOT_VPN,
+                self.user_id()
             ))
             .headers(DEFAULT_HEADERS.clone())
             .header("Referer", format!("{}/enlink/", ROOT_VPN))
@@ -262,15 +280,15 @@ impl WebVpnClient {
 }
 
 impl UserClient for WebVpnClient {
-    fn login(&self) {
-        todo!()
-    }
-
     fn get_client(&self) -> &Client {
         &self.client
     }
 
     fn get_client_mut(&mut self) -> &mut Client {
         &mut self.client
+    }
+
+    fn login(&self) {
+        todo!()
     }
 }

@@ -1,6 +1,6 @@
 pub mod client;
-pub mod fields;
 pub mod cookies_io;
+pub mod fields;
 pub mod types;
 pub mod webvpn;
 #[cfg(test)]
@@ -11,18 +11,24 @@ mod test {
     #[tokio::test]
 
     async fn login_test() {
-        let client = WebVpnClient::new("账号", "密码");
+        let mut client = WebVpnClient::new("账号", "密码");
         match client.common_login().await {
             Ok(json) => {
                 println!("{:?}", json);
-                match client.get_user_info(json.userid.clone().unwrap()).await {
+                // The UserInfo test
+                match client.get_user_info().await {
                     Ok(json) => println!("{:?}", json),
                     Err(message) => println!("{}", message),
                 }
-                match client
-                    .get_service_by_user(json.userid.clone().unwrap())
-                    .await
-                {
+
+                // The user service test
+                match client.get_service_by_user().await {
+                    Ok(json) => println!("{:?}", json),
+                    Err(message) => println!("{}", message),
+                }
+
+                // The tree service test
+                match client.get_tree_with_service().await {
                     Ok(json) => println!("{:?}", json),
                     Err(message) => println!("{}", message),
                 }
