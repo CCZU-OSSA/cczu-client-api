@@ -291,4 +291,16 @@ impl UserClient for WebVpnClient {
     fn login(&self) {
         todo!()
     }
+
+    fn get_cookies(&self) -> Arc<CookieStoreMutex> {
+        self.cookies.clone()
+    }
+
+    fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex> {
+        self.cookies.clone()
+    }
+
+    fn host(&self, _url: &str) -> String {
+        todo!()
+    }
 }

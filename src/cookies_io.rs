@@ -12,7 +12,7 @@ pub trait CookiesIOExt {
 }
 
 impl CookiesIOExt for CookieStore {
-    /// Copy the cookies of `from` to `to`
+    /// Copy the cookies of `from` to `to`.
     fn copy_cookies(&mut self, from: &Url, to: &Url) -> &mut Self {
         self.clone().matches(from).into_iter().for_each(|cookie| {
             self.insert(cookie.clone(), to).unwrap();

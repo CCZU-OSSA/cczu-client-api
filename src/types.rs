@@ -83,7 +83,6 @@ pub struct ElinkServiceInfoData {
     pub children: Option<Vec<ElinkServiceInfoData>>,
     #[serde(alias = "serviceList")]
     pub service_list: Option<Vec<ElinkServiceData>>,
-
     #[serde(alias = "serviceAllList")]
     pub service_all_list: Option<Vec<ElinkServiceData>>,
 }
