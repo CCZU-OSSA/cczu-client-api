@@ -15,7 +15,7 @@ use std::{collections::HashMap, sync::Arc};
 pub struct WebVpnClient {
     pub user: String,
     pub pwd: String,
-    pub client: Client,
+    pub client: Arc<Client>,
     pub cookies: Arc<CookieStoreMutex>,
     login_info: Option<ElinkLoginInfo>,
 }
@@ -42,11 +42,13 @@ impl WebVpnClient {
         WebVpnClient {
             user: user.to_string(),
             pwd: pwd.to_string(),
-            client: Client::builder()
-                .cookie_provider(cookies.clone())
-                .redirect(Policy::none())
-                .build()
-                .unwrap(),
+            client: Arc::new(
+                Client::builder()
+                    .cookie_provider(cookies.clone())
+                    .redirect(Policy::none())
+                    .build()
+                    .unwrap(),
+            ),
             cookies: cookies.clone(),
             login_info: None,
         }
@@ -280,14 +282,6 @@ impl WebVpnClient {
 }
 
 impl UserClient for WebVpnClient {
-    fn get_client(&self) -> &Client {
-        &self.client
-    }
-
-    fn get_client_mut(&mut self) -> &mut Client {
-        &mut self.client
-    }
-
     fn login(&self) {
         todo!()
     }
@@ -302,5 +296,13 @@ impl UserClient for WebVpnClient {
 
     fn host(&self, _url: &str) -> String {
         todo!()
+    }
+
+    fn get_client(&self) -> Arc<Client> {
+        self.client.clone()
+    }
+
+    fn get_client_mut(&mut self) -> Arc<Client> {
+        self.client.clone()
     }
 }

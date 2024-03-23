@@ -9,12 +9,17 @@ pub mod webvpn;
 #[cfg(test)]
 mod test {
     use super::webvpn::WebVpnClient;
+    use super::{
+        app::jwcas::JwcasApplication,
+        universal::{ClientType, UniversalClient},
+    };
     use rand::Rng;
 
     #[tokio::test]
 
     async fn login_test() {
         let mut client = WebVpnClient::new("账号", "密码");
+
         match client.common_login().await {
             Ok(json) => {
                 println!("{:?}", json);
@@ -50,5 +55,15 @@ mod test {
             })
             .collect();
         println!("{}", token)
+    }
+
+    #[tokio::test]
+    async fn universal_test() {
+        let universal = UniversalClient::new(ClientType::WebVPN, "账号", "密码");
+        let _app = universal
+            .visitor()
+            .lock()
+            .unwrap()
+            .visit_application::<JwcasApplication>();
     }
 }

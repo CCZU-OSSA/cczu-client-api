@@ -1,5 +1,5 @@
 use crate::client::UserClient;
 
-pub trait Application {
-    fn from_client(client: &mut dyn UserClient) -> Self;
+pub trait Application<'a> {
+    fn from_client(client: &'a mut dyn UserClient) -> Self;
 }

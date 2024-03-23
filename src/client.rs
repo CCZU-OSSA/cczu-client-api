@@ -6,17 +6,17 @@ use reqwest_cookie_store::CookieStoreMutex;
 
 pub trait UserClient {
     fn login(&self);
-    fn get_client(&self) -> &Client;
-    fn get_client_mut(&mut self) -> &mut Client;
+    fn get_client(&self) -> Arc<Client>;
+    fn get_client_mut(&mut self) -> Arc<Client>;
     fn get_cookies(&self) -> Arc<CookieStoreMutex>;
     fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex>;
     fn host(&self, url: &str) -> String;
 }
 
 impl dyn UserClient {
-    pub fn visit_application<T>(&mut self) -> T
+    pub fn visit_application<'a, T>(&'a mut self) -> T
     where
-        T: Application,
+        T: Application<'a>,
     {
         T::from_client(self)
     }
