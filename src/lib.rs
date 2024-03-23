@@ -3,11 +3,15 @@ pub mod client;
 pub mod common;
 pub mod cookies_io;
 pub mod fields;
+pub mod sso;
 pub mod types;
 pub mod universal;
 pub mod webvpn;
+
 #[cfg(test)]
 mod test {
+    use super::common::CommonClient;
+
     use super::webvpn::WebVpnClient;
     use super::{
         app::jwcas::JwcasApplication,
@@ -15,10 +19,13 @@ mod test {
     };
     use rand::Rng;
 
+    const USER: &'static str = "账户";
+    const PWD: &'static str = "密码";
+
     #[tokio::test]
 
     async fn login_test() {
-        let mut client = WebVpnClient::new("账号", "密码");
+        let mut client = WebVpnClient::new(USER.into(), PWD.into());
 
         match client.common_login().await {
             Ok(json) => {
@@ -59,11 +66,17 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let universal = UniversalClient::new(ClientType::WebVPN, "账号", "密码");
+        let universal = UniversalClient::new(ClientType::WebVPN, USER.into(), PWD.into());
         let _app = universal
             .visitor()
             .lock()
             .unwrap()
             .visit_application::<JwcasApplication>();
+    }
+
+    #[tokio::test]
+    async fn common_test() {
+        let client = CommonClient::new(USER.into(), PWD.into());
+        let _ = client.sso_login().await;
     }
 }

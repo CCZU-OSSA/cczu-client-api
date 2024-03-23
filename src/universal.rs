@@ -12,7 +12,7 @@ pub struct UniversalClient {
 }
 
 impl UniversalClient {
-    pub fn new(client: ClientType, user: &str, pwd: &str) -> Self {
+    pub fn new(client: ClientType, user: String, pwd: String) -> Self {
         Self {
             client: Arc::new(Mutex::new(match client {
                 ClientType::WebVPN => WebVpnClient::new(user, pwd),
@@ -26,10 +26,6 @@ impl UniversalClient {
 }
 
 impl UserClient for UniversalClient {
-    fn login(&self) {
-        self.client.lock().unwrap().login()
-    }
-
     fn get_cookies(&self) -> Arc<CookieStoreMutex> {
         self.client.lock().unwrap().get_cookies()
     }

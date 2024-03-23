@@ -1,16 +1,14 @@
 use crate::client::UserClient;
-use crate::cookies_io::CookiesIOExt;
-use crate::fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_VPN};
+use crate::fields::{DEFAULT_HEADERS, ROOT_VPN};
+use crate::sso::sso_login;
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
 };
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
-use reqwest::Url;
 use reqwest::{cookie::Cookie, redirect::Policy, Client, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
-use scraper::{Html, Selector};
 use std::{collections::HashMap, sync::Arc};
 pub struct WebVpnClient {
     pub user: String,
@@ -20,28 +18,12 @@ pub struct WebVpnClient {
     login_info: Option<ElinkLoginInfo>,
 }
 
-fn parse_hidden_values(html: &str) -> HashMap<String, String> {
-    let mut hidden_values = HashMap::new();
-    let dom = Html::parse_document(html);
-    let input_hidden_selector = Selector::parse(r#"input[type="hidden"]"#).unwrap();
-    let tags_hidden = dom.select(&input_hidden_selector);
-
-    tags_hidden.for_each(|tag_hidden| {
-        hidden_values.insert(
-            tag_hidden.attr("name").unwrap().to_string(),
-            tag_hidden.attr("value").unwrap().to_string(),
-        );
-    });
-
-    hidden_values
-}
-
 impl WebVpnClient {
-    pub fn new(user: &str, pwd: &str) -> Self {
+    pub fn new(user: String, pwd: String) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
         WebVpnClient {
-            user: user.to_string(),
-            pwd: pwd.to_string(),
+            user,
+            pwd,
             client: Arc::new(
                 Client::builder()
                     .cookie_provider(cookies.clone())
@@ -57,49 +39,14 @@ impl WebVpnClient {
     /// SSO Login
     /// if Ok, return `ElinkUserInfo` else return Err(message)
     pub async fn sso_login(&mut self) -> Result<ElinkLoginInfo, String> {
-        let mut dom = String::new();
-
-        let url = format!(
-            "{}/sso/login?service={}/enlink/api/client/callback/cas",
-            ROOT_SSO, ROOT_VPN
-        );
-
-        if let Ok(response) = self
-            .client
-            .get(url.clone())
-            .headers(DEFAULT_HEADERS.clone())
-            .send()
-            .await
-        {
-            let text = response.text().await;
-
-            if let Ok(text) = text {
-                dom = text;
-            }
-
-            self.cookies.lock().unwrap().copy_cookies(
-                &url.parse::<Url>().unwrap(),
-                &ROOT_SSO.parse::<Url>().unwrap(),
-            );
-        }
-
-        if dom.is_empty() {
-            // println!("j_session_id: {};dom: {}", j_session_id, dom);
-            return Err("SSO 登录失败(无法访问)，请尝试普通登录...".into());
-        }
-
-        let mut login_param = parse_hidden_values(dom.as_str());
-        login_param.insert("username".into(), self.user.clone());
-        login_param.insert("password".into(), BASE64_STANDARD.encode(self.pwd.clone()));
-
-        if let Ok(response) = self
-            .client
-            .post(format!("{}/sso/login", ROOT_SSO))
-            .headers(DEFAULT_HEADERS.clone())
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .form(&login_param)
-            .send()
-            .await
+        if let Ok(response) = sso_login(
+            self.get_client(),
+            self.get_cookies(),
+            self.user.clone(),
+            self.pwd.clone(),
+            format!("{}/enlink/api/client/callback/cas", ROOT_VPN),
+        )
+        .await
         {
             if response.status() == StatusCode::FOUND {
                 let redirect_location = response
@@ -132,8 +79,7 @@ impl WebVpnClient {
                 }
             }
         }
-
-        Err("SSO 登录失败，请尝试普通登录...".into())
+        Err("()".into())
     }
 
     pub async fn common_login(&mut self) -> Result<ElinkLoginInfo, String> {
@@ -282,10 +228,6 @@ impl WebVpnClient {
 }
 
 impl UserClient for WebVpnClient {
-    fn login(&self) {
-        todo!()
-    }
-
     fn get_cookies(&self) -> Arc<CookieStoreMutex> {
         self.cookies.clone()
     }

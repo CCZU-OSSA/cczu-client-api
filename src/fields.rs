@@ -13,3 +13,4 @@ pub static DEFAULT_HEADERS: Lazy<HeaderMap> = Lazy::new(|| {
 });
 pub const ROOT_SSO: &'static str = "http://sso.cczu.edu.cn";
 pub const ROOT_VPN: &'static str = "https://zmvpn.cczu.edu.cn";
+pub const ROOT_YWTB: &'static str = "http://ywtb.cczu.edu.cn";

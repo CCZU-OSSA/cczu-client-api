@@ -5,7 +5,6 @@ use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
 
 pub trait UserClient {
-    fn login(&self);
     fn get_client(&self) -> Arc<Client>;
     fn get_client_mut(&mut self) -> Arc<Client>;
     fn get_cookies(&self) -> Arc<CookieStoreMutex>;
