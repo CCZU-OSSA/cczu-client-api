@@ -10,6 +10,7 @@ pub trait UserClient {
     fn get_cookies(&self) -> Arc<CookieStoreMutex>;
     fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex>;
     fn host(&self, url: &str) -> String;
+    fn initialize_url(&self, url: &str);
 }
 
 impl dyn UserClient {

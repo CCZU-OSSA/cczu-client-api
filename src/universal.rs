@@ -45,4 +45,8 @@ impl UserClient for UniversalClient {
     fn get_client_mut(&mut self) -> Arc<reqwest::Client> {
         self.client.lock().unwrap().get_client_mut()
     }
+
+    fn initialize_url(&self, url: &str) {
+        todo!()
+    }
 }

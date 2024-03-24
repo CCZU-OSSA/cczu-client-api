@@ -247,4 +247,8 @@ impl UserClient for WebVpnClient {
     fn get_client_mut(&mut self) -> Arc<Client> {
         self.client.clone()
     }
+
+    fn initialize_url(&self, url: &str) {
+        todo!()
+    }
 }

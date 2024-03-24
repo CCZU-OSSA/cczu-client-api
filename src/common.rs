@@ -77,4 +77,8 @@ impl UserClient for CommonClient {
     fn get_client_mut(&mut self) -> std::sync::Arc<reqwest::Client> {
         self.client.clone()
     }
+
+    fn initialize_url(&self, url: &str) {
+        todo!()
+    }
 }

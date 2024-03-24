@@ -1,7 +1,6 @@
 use crate::client::UserClient;
 
 use super::app::Application;
-
 pub struct JwcasApplication<'a> {
     client: &'a mut dyn UserClient,
 }
@@ -18,7 +17,7 @@ impl<'a> JwcasApplication<'a> {
     }
 
     pub fn get_classes(&mut self) {
-        let _locker = self.client.get_cookies_mut();
+        let client_cookies = self.client.get_cookies_mut();
         todo!()
     }
 }
