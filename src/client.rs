@@ -9,7 +9,9 @@ pub trait UserClient {
     fn get_client_mut(&mut self) -> Arc<Client>;
     fn get_cookies(&self) -> Arc<CookieStoreMutex>;
     fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex>;
-    fn host(&self, url: &str) -> String;
+    /// redirect the url if use webvpn.
+    fn redirect(&self, url: &str) -> String;
+    /// copy the login cookie to the url.
     fn initialize_url(&self, url: &str);
 }
 

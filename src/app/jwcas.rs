@@ -17,7 +17,7 @@ impl<'a> JwcasApplication<'a> {
     }
 
     pub fn get_classes(&mut self) {
-        let client_cookies = self.client.get_cookies_mut();
+        self.client.initialize_url("");
         todo!()
     }
 }

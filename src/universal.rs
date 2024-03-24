@@ -1,7 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{client::UserClient, webvpn::WebVpnClient};
+use crate::{
+    client::UserClient, cookies_io::CookiesIOExt, fields::ROOT_SSO_URL, webvpn::WebVpnClient,
+};
+use reqwest::Url;
 use reqwest_cookie_store::CookieStoreMutex;
+
 pub enum ClientType {
     WebVPN,
     Common,
@@ -34,8 +38,8 @@ impl UserClient for UniversalClient {
         self.client.lock().unwrap().get_cookies_mut()
     }
 
-    fn host(&self, _url: &str) -> String {
-        todo!()
+    fn redirect(&self, url: &str) -> String {
+        self.client.lock().unwrap().redirect(url)
     }
 
     fn get_client(&self) -> Arc<reqwest::Client> {
@@ -47,6 +51,9 @@ impl UserClient for UniversalClient {
     }
 
     fn initialize_url(&self, url: &str) {
-        todo!()
+        self.get_cookies()
+            .lock()
+            .unwrap()
+            .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
 }

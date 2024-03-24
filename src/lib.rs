@@ -7,7 +7,6 @@ pub mod sso;
 pub mod types;
 pub mod universal;
 pub mod webvpn;
-
 #[cfg(test)]
 mod test {
     use super::common::CommonClient;

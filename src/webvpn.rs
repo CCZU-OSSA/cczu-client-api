@@ -1,5 +1,6 @@
 use crate::client::UserClient;
-use crate::fields::{DEFAULT_HEADERS, ROOT_VPN};
+use crate::cookies_io::CookiesIOExt;
+use crate::fields::{DEFAULT_HEADERS, ROOT_SSO_URL, ROOT_VPN};
 use crate::sso::sso_login;
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
@@ -7,7 +8,7 @@ use crate::types::{
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
-use reqwest::{cookie::Cookie, redirect::Policy, Client, StatusCode};
+use reqwest::{cookie::Cookie, redirect::Policy, Client, StatusCode, Url};
 use reqwest_cookie_store::CookieStoreMutex;
 use std::{collections::HashMap, sync::Arc};
 pub struct WebVpnClient {
@@ -236,7 +237,7 @@ impl UserClient for WebVpnClient {
         self.cookies.clone()
     }
 
-    fn host(&self, _url: &str) -> String {
+    fn redirect(&self, _url: &str) -> String {
         todo!()
     }
 
@@ -249,6 +250,9 @@ impl UserClient for WebVpnClient {
     }
 
     fn initialize_url(&self, url: &str) {
-        todo!()
+        self.get_cookies()
+            .lock()
+            .unwrap()
+            .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
 }

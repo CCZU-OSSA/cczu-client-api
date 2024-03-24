@@ -6,7 +6,7 @@ use reqwest_cookie_store::CookieStoreMutex;
 use crate::{
     client::UserClient,
     cookies_io::CookiesIOExt,
-    fields::{ROOT_SSO, ROOT_YWTB},
+    fields::{ROOT_SSO, ROOT_SSO_URL, ROOT_YWTB},
     sso::sso_login,
 };
 
@@ -66,8 +66,8 @@ impl UserClient for CommonClient {
         self.cookies.clone()
     }
 
-    fn host(&self, _url: &str) -> String {
-        todo!()
+    fn redirect(&self, url: &str) -> String {
+        url.to_string()
     }
 
     fn get_client(&self) -> std::sync::Arc<reqwest::Client> {
@@ -79,6 +79,9 @@ impl UserClient for CommonClient {
     }
 
     fn initialize_url(&self, url: &str) {
-        todo!()
+        self.get_cookies()
+            .lock()
+            .unwrap()
+            .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
 }
