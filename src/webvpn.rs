@@ -255,6 +255,41 @@ impl WebVpnClient {
         }
         Err("获取失败，请稍后重试".into())
     }
+
+    pub async fn get_visit_service_by_user(&mut self) -> Result<ElinkUserServiceInfo, String> {
+        let mut param = HashMap::new();
+        param.insert("name", "");
+        if let Ok(response) = self
+            .client
+            .get(format!(
+                "{}/enlink/api/client/service/suvisitmp/findVisitServiceByUserId/{}",
+                ROOT_VPN,
+                self.user_id()
+            ))
+            .headers(DEFAULT_HEADERS.clone())
+            .header("Referer", format!("{}/enlink/", ROOT_VPN))
+            .query(&param)
+            .send()
+            .await
+        {
+            if let Ok(json) = response.text().await {
+                let services: ElinkUserServiceInfo = serde_json::from_str(json.as_str()).unwrap();
+                let mut server_map: HashMap<String, String> = HashMap::new();
+
+                services
+                    .data
+                    .clone()
+                    .unwrap()
+                    .into_iter()
+                    .for_each(|element| {
+                        server_map.insert(element.server.unwrap(), element.url_plus.unwrap());
+                    });
+                self.server_map = Some(server_map);
+                return Ok(services);
+            }
+        }
+        Err("获取失败，请稍后重试".into())
+    }
 }
 
 impl UserClient for WebVpnClient {

@@ -29,21 +29,17 @@ mod test {
         match client.common_login().await {
             Ok(json) => {
                 println!("{:?}", json);
-                // The UserInfo test
-                match client.get_user_info().await {
-                    Ok(json) => println!("{:?}", json),
-                    Err(message) => println!("{}", message),
-                }
-
-                // The user service test
-                match client.get_service_by_user().await {
-                    Ok(json) => println!("{:?}", json),
-                    Err(message) => println!("{}", message),
-                }
-
-                // The tree service test
-                match client.get_tree_with_service().await {
-                    Ok(json) => println!("{:?}", json),
+                // The user visit service test
+                match client.get_visit_service_by_user().await {
+                    Ok(json) => {
+                        for service in json.data.unwrap() {
+                            if service.name.unwrap().contains("一网通办") {
+                                // 第一步: 取得一网通办url
+                                let url = service.url_plus.unwrap();
+                                println!("{}", url)
+                            }
+                        }
+                    }
                     Err(message) => println!("{}", message),
                 }
             }
