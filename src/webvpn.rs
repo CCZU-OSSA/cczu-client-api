@@ -17,6 +17,7 @@ pub struct WebVpnClient {
     pub client: Arc<Client>,
     pub cookies: Arc<CookieStoreMutex>,
     login_info: Option<ElinkLoginInfo>,
+    server_map: Option<HashMap<String, String>>,
 }
 
 impl WebVpnClient {
@@ -34,6 +35,7 @@ impl WebVpnClient {
             ),
             cookies: cookies.clone(),
             login_info: None,
+            server_map: None,
         }
     }
 
@@ -177,7 +179,7 @@ impl WebVpnClient {
     }
 
     /// Please Call after login
-    pub async fn get_tree_with_service(&self) -> Result<ElinkServiceInfo, String> {
+    pub async fn get_tree_with_service(&mut self) -> Result<ElinkServiceInfo, String> {
         let mut body = HashMap::new();
         body.insert("nameLike", "".to_string());
         body.insert("serviceNameLike", "".to_string());
@@ -197,13 +199,28 @@ impl WebVpnClient {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                let services: ElinkServiceInfo = serde_json::from_str(json.as_str()).unwrap();
+                let mut server_map: HashMap<String, String> = HashMap::new();
+                services
+                    .data
+                    .clone()
+                    .unwrap()
+                    .service_all_list
+                    .clone()
+                    .into_iter()
+                    .for_each(|element| {
+                        element.into_iter().for_each(|element| {
+                            server_map.insert(element.server.unwrap(), element.url_plus.unwrap());
+                        })
+                    });
+                self.server_map = Some(server_map);
+                return Ok(services);
             }
         }
         Err("获取失败，请稍后重试".into())
     }
 
-    pub async fn get_service_by_user(&self) -> Result<ElinkUserServiceInfo, String> {
+    pub async fn get_service_by_user(&mut self) -> Result<ElinkUserServiceInfo, String> {
         let mut param = HashMap::new();
         param.insert("name", "");
         if let Ok(response) = self
@@ -221,7 +238,19 @@ impl WebVpnClient {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                let services: ElinkUserServiceInfo = serde_json::from_str(json.as_str()).unwrap();
+                let mut server_map: HashMap<String, String> = HashMap::new();
+
+                services
+                    .data
+                    .clone()
+                    .unwrap()
+                    .into_iter()
+                    .for_each(|element| {
+                        server_map.insert(element.server.unwrap(), element.url_plus.unwrap());
+                    });
+                self.server_map = Some(server_map);
+                return Ok(services);
             }
         }
         Err("获取失败，请稍后重试".into())
@@ -237,8 +266,11 @@ impl UserClient for WebVpnClient {
         self.cookies.clone()
     }
 
-    fn redirect(&self, _url: &str) -> String {
-        todo!()
+    fn redirect(&self, url: &str) -> String {
+        if let Some(url_plus) = self.server_map.clone().unwrap().get(url) {
+            return url_plus.clone();
+        }
+        url.to_string()
     }
 
     fn get_client(&self) -> Arc<Client> {
