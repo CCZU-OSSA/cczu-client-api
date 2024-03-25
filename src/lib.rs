@@ -9,17 +9,16 @@ pub mod universal;
 pub mod webvpn;
 #[cfg(test)]
 mod test {
+    use crate::app::app::Application;
+
     use super::common::CommonClient;
 
     use super::webvpn::WebVpnClient;
-    use super::{
-        app::jwcas::JwcasApplication,
-        universal::{ClientType, UniversalClient},
-    };
+    use super::{app::jwcas::JwcasApplication, universal::UniversalClient};
     use rand::Rng;
 
-    const USER: &'static str = "账户";
-    const PWD: &'static str = "密码";
+    const USER: &'static str = "";
+    const PWD: &'static str = "";
 
     #[tokio::test]
 
@@ -61,17 +60,26 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let universal = UniversalClient::new(ClientType::WebVPN, USER.into(), PWD.into());
-        let _app = universal
-            .visitor()
-            .lock()
-            .unwrap()
-            .visit_application::<JwcasApplication>();
+        let universal = UniversalClient::common(USER.into(), PWD.into());
+        let visitor = universal.visitor();
+        let mut locker = visitor.lock().unwrap();
+        let jwcas_app = locker.visit_application::<JwcasApplication>();
+        jwcas_app.get_class_list().await;
     }
 
     #[tokio::test]
     async fn common_test() {
-        let client = CommonClient::new(USER.into(), PWD.into());
-        let _ = client.sso_login().await;
+        let mut client = CommonClient::new(USER.into(), PWD.into());
+        client.sso_login().await.unwrap();
+        let app = JwcasApplication::from_client(&mut client);
+        app.get_class_list().await;
+    }
+
+    #[tokio::test]
+    async fn webvpn_test() {
+        let mut client = WebVpnClient::new(USER.into(), PWD.into());
+        client.sso_login().await.unwrap();
+        let app = JwcasApplication::from_client(&mut client);
+        app.get_class_list().await;
     }
 }

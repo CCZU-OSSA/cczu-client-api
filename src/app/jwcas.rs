@@ -1,3 +1,5 @@
+use reqwest::{StatusCode, Url};
+
 use crate::client::UserClient;
 
 use super::app::Application;
@@ -20,13 +22,34 @@ impl<'a> JwcasApplication<'a> {
     pub fn login(&self) {
         let _api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
     }
-    pub fn get_class_list(&self) {
+    pub async fn get_class_list(&self) {
         let api = format!("{}/web_cjgl/cx_cj_xh.aspx", self.root);
         // not the same cookies, delete this after impl `login` method
         self.client.initialize_url(api.as_str());
+
+        let reqwest_client = self.client.get_client();
+        if let Ok(response) = reqwest_client.get(Url::parse(&api).unwrap()).send().await {
+            if response.status() == StatusCode::FOUND {
+                if let Ok(response) = reqwest_client
+                    .get(
+                        response
+                            .headers()
+                            .get("location")
+                            .unwrap()
+                            .to_str()
+                            .unwrap(),
+                    )
+                    .send()
+                    .await
+                {
+                    println!("{}", response.text().await.unwrap())
+                }
+            }
+        }
     }
 
-    pub fn get_grades_list(&self) {
-        let _api = format!("{}/web_cjgl/cx_cj_xh.aspx", self.root);
+    pub async fn get_grades_list(&self) {
+        let api = format!("{}/web_cjgl/cx_cj_xh.aspx", self.root);
+        self.client.initialize_url(api.as_str());
     }
 }

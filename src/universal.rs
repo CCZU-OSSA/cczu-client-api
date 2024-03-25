@@ -1,29 +1,36 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    client::UserClient, cookies_io::CookiesIOExt, fields::ROOT_SSO_URL, webvpn::WebVpnClient,
+    client::UserClient, common::CommonClient, cookies_io::CookiesIOExt, fields::ROOT_SSO_URL,
+    webvpn::WebVpnClient,
 };
 use reqwest::Url;
 use reqwest_cookie_store::CookieStoreMutex;
 
-pub enum ClientType {
-    WebVPN,
-    Common,
-}
 /// Universal Can chose the ClientType.
 pub struct UniversalClient {
     client: Arc<Mutex<dyn UserClient>>,
 }
 
 impl UniversalClient {
-    pub fn new(client: ClientType, user: String, pwd: String) -> Self {
+    pub fn new(client: impl UserClient + 'static) -> Self {
         Self {
-            client: Arc::new(Mutex::new(match client {
-                ClientType::WebVPN => WebVpnClient::new(user, pwd),
-                _ => todo!(),
-            })),
+            client: Arc::new(Mutex::new(client)),
         }
     }
+
+    pub fn common(user: String, pwd: String) -> Self {
+        Self {
+            client: Arc::new(Mutex::new(CommonClient::new(user, pwd))),
+        }
+    }
+
+    pub fn webvpn(user: String, pwd: String) -> Self {
+        Self {
+            client: Arc::new(Mutex::new(WebVpnClient::new(user, pwd))),
+        }
+    }
+
     pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
         self.client.clone()
     }
