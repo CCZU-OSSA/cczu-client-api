@@ -1,6 +1,6 @@
 use crate::client::UserClient;
 use crate::cookies_io::CookiesIOExt;
-use crate::fields::{DEFAULT_HEADERS, ROOT_SSO_URL, ROOT_VPN};
+use crate::fields::{DEFAULT_HEADERS, ROOT_SSO_URL, ROOT_VPN, WEBVPN_SERVER_MAP};
 use crate::sso::sso_login;
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
@@ -302,9 +302,13 @@ impl UserClient for WebVpnClient {
     }
 
     fn redirect(&self, url: &str) -> String {
+        if let Some(url_plus) = WEBVPN_SERVER_MAP.get(url) {
+            return url_plus.clone();
+        }
         if let Some(url_plus) = self.server_map.clone().unwrap().get(url) {
             return url_plus.clone();
         }
+
         url.to_string()
     }
 
