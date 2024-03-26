@@ -63,4 +63,12 @@ impl UserClient for UniversalClient {
             .unwrap()
             .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
+
+    fn get_user(&self) -> String {
+        self.client.lock().unwrap().get_user()
+    }
+
+    fn get_pwd(&self) -> String {
+        self.client.lock().unwrap().get_pwd()
+    }
 }

@@ -1,6 +1,6 @@
 use crate::client::UserClient;
 use crate::cookies_io::CookiesIOExt;
-use crate::fields::{DEFAULT_HEADERS, ROOT_SSO_URL, ROOT_VPN, WEBVPN_SERVER_MAP};
+use crate::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
 use crate::sso::sso_login;
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
@@ -82,7 +82,7 @@ impl WebVpnClient {
                 }
             }
         }
-        Err("()".into())
+        Err("无法使用SSO登录，账户密码错误?".into())
     }
 
     pub async fn common_login(&mut self) -> Result<ElinkLoginInfo, String> {
@@ -324,6 +324,14 @@ impl UserClient for WebVpnClient {
         self.get_cookies()
             .lock()
             .unwrap()
-            .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
+            .copy_cookies(&ROOT_VPN_URL, &Url::parse(url).unwrap());
+    }
+
+    fn get_user(&self) -> String {
+        self.user.clone()
+    }
+
+    fn get_pwd(&self) -> String {
+        self.pwd.clone()
     }
 }

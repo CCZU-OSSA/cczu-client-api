@@ -13,7 +13,8 @@ pub trait UserClient {
     fn redirect(&self, url: &str) -> String;
     /// copy the login cookie to the url.
     fn initialize_url(&self, url: &str);
-
+    fn get_user(&self) -> String;
+    fn get_pwd(&self) -> String;
 }
 
 impl dyn UserClient {

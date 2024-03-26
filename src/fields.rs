@@ -17,8 +17,10 @@ pub static DEFAULT_HEADERS: Lazy<HeaderMap> = Lazy::new(|| {
     headers
 });
 pub const ROOT_SSO: &'static str = "http://sso.cczu.edu.cn";
-pub const ROOT_SSO_URL: Lazy<Url> = Lazy::new(|| Url::parse("http://sso.cczu.edu.cn").unwrap());
+pub const ROOT_SSO_URL: Lazy<Url> = Lazy::new(|| Url::parse(ROOT_SSO).unwrap());
 pub const ROOT_VPN: &'static str = "https://zmvpn.cczu.edu.cn";
+pub const ROOT_VPN_URL: Lazy<Url> = Lazy::new(|| Url::parse(ROOT_VPN).unwrap());
+
 pub const ROOT_YWTB: &'static str = "http://ywtb.cczu.edu.cn";
 pub const WEBVPN_SERVER_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let mut map = HashMap::new();

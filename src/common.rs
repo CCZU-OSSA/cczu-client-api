@@ -58,11 +58,11 @@ impl CommonClient {
 }
 
 impl UserClient for CommonClient {
-    fn get_cookies(&self) -> std::sync::Arc<reqwest_cookie_store::CookieStoreMutex> {
+    fn get_cookies(&self) -> Arc<reqwest_cookie_store::CookieStoreMutex> {
         self.cookies.clone()
     }
 
-    fn get_cookies_mut(&mut self) -> std::sync::Arc<reqwest_cookie_store::CookieStoreMutex> {
+    fn get_cookies_mut(&mut self) -> Arc<reqwest_cookie_store::CookieStoreMutex> {
         self.cookies.clone()
     }
 
@@ -83,5 +83,13 @@ impl UserClient for CommonClient {
             .lock()
             .unwrap()
             .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
+    }
+
+    fn get_user(&self) -> String {
+        self.user.clone()
+    }
+
+    fn get_pwd(&self) -> String {
+        self.pwd.clone()
     }
 }
