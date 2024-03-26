@@ -7,12 +7,12 @@ edition = "2021"
 
 
 [dependencies]
-reqwest = { version = "0.11", features = [
+reqwest = { version = "0.12", features = [
     "cookies",
     "multipart",
     "native-tls-vendored",
-] } # Upgrade block by `https://github.com/pfernie/reqwest_cookie_store/pull/8`
-reqwest_cookie_store = "0.6"
+] }
+reqwest_cookie_store = "0.7"
 
 once_cell = "*"
 scraper = "*"
