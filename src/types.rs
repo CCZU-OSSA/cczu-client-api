@@ -127,6 +127,7 @@ pub struct ElinkServiceData {
     pub gateway_vo: Option<ElinkServiceGatewayData>,
 }
 
+
 pub struct Resp {
     pub resp: Response,
     pub cookies: HashMap<String, String>,

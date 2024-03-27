@@ -1,15 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{Client, Response, Url};
+use reqwest::{Client, Response};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 
-use crate::{
-    cookies_io::CookiesIOExt,
-    creq,
-    fields::{DEFAULT_HEADERS, ROOT_SSO},
-};
+use crate::{creq, fields::ROOT_SSO};
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
     let mut hidden_values = HashMap::new();

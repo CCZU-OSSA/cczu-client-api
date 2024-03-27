@@ -1,8 +1,5 @@
 use async_recursion::async_recursion;
-use reqwest::{
-    redirect::{self, Policy},
-    Client, Method, Response, StatusCode,
-};
+use reqwest::{redirect::Policy, Client, Method, Response, StatusCode};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{fields::DEFAULT_HEADERS, types::Resp};
@@ -46,7 +43,7 @@ impl Request {
 
     pub fn cookie(&mut self, cookie: bool) -> &mut Self {
         self.cookie = cookie;
-        return self;
+        self
     }
 
     /**
@@ -55,36 +52,36 @@ impl Request {
      */
     pub fn follow_redirect(&mut self, redirect: bool) -> &mut Self {
         self.redirect = redirect;
-        return self;
+        self
     }
 
     pub fn param(&mut self, key: &str, value: &str) -> &mut Self {
         self.param.insert(key.into(), value.into());
-        return self;
+        self
     }
     pub fn header(&mut self, key: &str, value: &str) -> &mut Self {
         self.headers.insert(key.into(), value.into());
-        return self;
+        self
     }
 
     pub fn form(&mut self, key: &str, value: &str) -> &mut Self {
         self.form.insert(key.into(), value.into());
-        return self;
+        self
     }
 
     pub fn forms(&mut self, map: HashMap<String, String>) -> &mut Self {
         self.form = map.clone();
-        return self;
+        self
     }
 
     pub fn cookies(&mut self, map: HashMap<String, String>) -> &mut Self {
         self.cookies = map.clone();
-        return self;
+        self
     }
 
     pub fn body(&mut self, body: &str) -> &mut Self {
         self.body = body.into();
-        return self;
+        self
     }
 
     pub async fn send(&mut self) -> Result<Resp, String> {
@@ -107,26 +104,24 @@ impl Request {
         if !self.headers.is_empty() {
             // 添加默认头
             executor = executor.headers(DEFAULT_HEADERS.clone());
-            for header in self.headers.clone() {
-                executor = executor.header(header.0.clone(), header.1.clone())
+            for (key, value) in self.headers.clone() {
+                executor = executor.header(key, value)
             }
         }
         // 拼接 Cookies
-        if !self.cookies.is_empty() {
-            let mut str: String = "".into();
-            for cookie in self.cookies.clone() {
-                if !str.is_empty() {
-                    str += ";"
-                }
-                str += &format!("{}={}", cookie.0.clone(), cookie.1.clone());
-            }
-            executor = executor.header("Cookie", str);
-        }
+        executor = executor.header(
+            "Cookie",
+            self.cookies
+                .iter()
+                .map(|(key, value)| format!("{}={}", key, value))
+                .collect::<Vec<String>>()
+                .join(";"),
+        );
 
         if let Ok(resp) = executor.send().await {
             return self.parse_respose(resp).await;
         }
-        return Err("Failed.".into());
+        Err("Failed.".into())
     }
 
     #[async_recursion]
@@ -134,12 +129,11 @@ impl Request {
         // 处理响应
         // 存储cookie
 
-        for header in resp.headers() {
-            let key = header.0.clone().to_string();
-            if key.to_ascii_lowercase() == "set-cookie" {
-                let cookie: String = urlencoding::decode(header.1.clone().to_str().unwrap())
-                    .unwrap()
-                    .into();
+        resp.headers()
+            .iter()
+            .filter(|(key, _)| key.to_string().to_ascii_lowercase() == "set-cookie")
+            .for_each(|(_, value)| {
+                let cookie: String = urlencoding::decode(value.to_str().unwrap()).unwrap().into();
                 let mut cookies = cookie.split(";");
                 let c: String = cookies.next().unwrap().into();
                 let mut sc = c.split("=").clone();
@@ -149,15 +143,14 @@ impl Request {
                 self.cookies
                     .insert(cookie_key.clone(), cookie_value.clone());
                 println!("Add cookies: {}={}", cookie_key, cookie_value);
-            }
-        }
+            });
 
         if resp.status() == StatusCode::FOUND {
             // 取Location头
             let location = resp.headers().get("Location").unwrap().to_str().unwrap();
-            println!("redirect to: {}", location.clone());
+            println!("redirect to: {}", location);
             if self.redirect {
-                self.url = location.clone().into();
+                self.url = location.into();
                 return self.send().await;
             }
             return Request::get(location.into())
@@ -165,9 +158,9 @@ impl Request {
                 .send()
                 .await;
         }
-        return Ok(Resp {
-            resp: resp,
+        Ok(Resp {
+            resp,
             cookies: self.cookies.clone(),
-        });
+        })
     }
 }
