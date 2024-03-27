@@ -1,5 +1,8 @@
 use async_recursion::async_recursion;
-use reqwest::{redirect::Policy, Client, Method, Response, StatusCode};
+use reqwest::{
+    redirect::{self, Policy},
+    Client, Method, Response, StatusCode,
+};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{fields::DEFAULT_HEADERS, types::Resp};
@@ -9,6 +12,7 @@ pub struct Request {
     pub method: Method,
     pub cookies: HashMap<String, String>,
     pub cookie: bool,
+    redirect: bool,
     param: HashMap<String, String>,
     headers: HashMap<String, String>,
     body: String,
@@ -27,6 +31,7 @@ impl Request {
             form: HashMap::new(),
             cookies: HashMap::new(),
             cookie: true,
+            redirect: false,
             client: Arc::new(Client::builder().redirect(Policy::none()).build().unwrap()),
         };
     }
@@ -41,6 +46,15 @@ impl Request {
 
     pub fn cookie(&mut self, cookie: bool) -> &mut Self {
         self.cookie = cookie;
+        return self;
+    }
+
+    /**
+     * 是否跳转跟随方法
+     * 如果否，则跳转一律使用get带cookie请求
+     */
+    pub fn follow_redirect(&mut self, redirect: bool) -> &mut Self {
+        self.redirect = redirect;
         return self;
     }
 
@@ -142,6 +156,10 @@ impl Request {
             // 取Location头
             let location = resp.headers().get("Location").unwrap().to_str().unwrap();
             println!("redirect to: {}", location.clone());
+            if self.redirect {
+                self.url = location.clone().into();
+                return self.send().await;
+            }
             return Request::get(location.into())
                 .cookies(self.cookies.clone())
                 .send()
