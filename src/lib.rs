@@ -2,6 +2,7 @@ pub mod app;
 pub mod client;
 pub mod common;
 pub mod cookies_io;
+pub mod creq;
 pub mod fields;
 pub mod sso;
 pub mod types;
@@ -25,22 +26,9 @@ mod test {
     async fn login_test() {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
 
-        match client.common_login().await {
+        match client.sso_login().await {
             Ok(json) => {
                 println!("{:?}", json);
-                // The user visit service test
-                match client.get_visit_service_by_user().await {
-                    Ok(json) => {
-                        for service in json.data.unwrap() {
-                            if service.name.unwrap().contains("一网通办") {
-                                // 第一步: 取得一网通办url
-                                let url = service.url_plus.unwrap();
-                                println!("{}", url)
-                            }
-                        }
-                    }
-                    Err(message) => println!("{}", message),
-                }
             }
             Err(message) => println!("{}", message),
         };

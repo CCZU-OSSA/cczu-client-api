@@ -7,6 +7,7 @@ use scraper::{Html, Selector};
 
 use crate::{
     cookies_io::CookiesIOExt,
+    creq,
     fields::{DEFAULT_HEADERS, ROOT_SSO},
 };
 
@@ -38,23 +39,21 @@ where
 {
     let mut dom = String::new();
     let url: String = format!("{}/sso/login?service={}", ROOT_SSO, service.into());
-
-    if let Ok(response) = client
-        .get(url.clone())
-        .headers(DEFAULT_HEADERS.clone())
-        .send()
-        .await
-    {
-        let text = response.text().await;
-
+    let mut cookies: HashMap<String, String> = HashMap::new();
+    if let Ok(response) = creq::Request::get(url.clone()).send().await {
+        let text = response.resp.text().await;
         if let Ok(text) = text {
             dom = text;
         }
-
+        for ck in response.cookies {
+            cookies.insert(ck.0, ck.1);
+        }
+        /*
         cookies.lock().unwrap().copy_cookies(
             &url.parse::<Url>().unwrap(),
             &ROOT_SSO.parse::<Url>().unwrap(),
         );
+        */
     }
 
     if dom.is_empty() {
@@ -65,15 +64,10 @@ where
     login_param.insert("username".into(), user.into());
     login_param.insert("password".into(), BASE64_STANDARD.encode(pwd.into()));
 
-    if let Ok(response) = client
-        .post(format!("{}/sso/login", ROOT_SSO))
-        .headers(DEFAULT_HEADERS.clone())
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .form(&login_param)
-        .send()
-        .await
-    {
-        return Ok(response);
+    let mut req = creq::Request::post(format!("{}/sso/login", ROOT_SSO));
+
+    if let Ok(response) = req.forms(login_param.clone()).cookies(cookies).send().await {
+        return Ok(response.resp);
     }
 
     Err("SSO 登录失败".into())

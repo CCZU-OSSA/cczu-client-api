@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use aes::Aes128Enc;
 use cbc::Encryptor;
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
@@ -122,4 +125,9 @@ pub struct ElinkServiceData {
     pub host_md5: Option<String>,
     #[serde(alias = "gatewayVo")]
     pub gateway_vo: Option<ElinkServiceGatewayData>,
+}
+
+pub struct Resp {
+    pub resp: Response,
+    pub cookies: HashMap<String, String>,
 }
