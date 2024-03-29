@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     client::UserClient, common::CommonClient, cookies_io::CookiesIOExt, fields::ROOT_SSO_URL,
-    webvpn::WebVpnClient,
+    sso::is_webvpn_available, webvpn::WebVpnClient,
 };
 use reqwest::Url;
 use reqwest_cookie_store::CookieStoreMutex;
@@ -28,6 +28,14 @@ impl UniversalClient {
     pub fn webvpn(user: String, pwd: String) -> Self {
         Self {
             client: Arc::new(Mutex::new(WebVpnClient::new(user, pwd))),
+        }
+    }
+
+    pub async fn auto(user: String, pwd: String) -> Self {
+        if is_webvpn_available().await {
+            Self::webvpn(user, pwd)
+        } else {
+            Self::common(user, pwd)
         }
     }
 

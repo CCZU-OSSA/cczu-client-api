@@ -25,7 +25,7 @@ impl<'a> JwcasApplication<'a> {
         let reqwest_client = self.client.get_client();
         if let Ok(response) = reqwest_client.get(Url::parse(&api).unwrap()).send().await {
             if response.status() == StatusCode::FOUND {
-                if let Ok(response) = reqwest_client
+                if let Ok(_response) = reqwest_client
                     .get(
                         response
                             .headers()

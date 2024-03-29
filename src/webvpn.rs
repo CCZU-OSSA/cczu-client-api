@@ -74,9 +74,10 @@ impl WebVpnClient {
                         let json =
                             String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
                                 .unwrap();
-                        //println!("{}", json);
+
                         let data: ElinkLoginInfo = serde_json::from_str(json.as_str()).unwrap();
                         self.login_info = Some(data.clone());
+
                         return Ok(data);
                     }
                 }
