@@ -22,7 +22,6 @@ mod test {
     const PWD: &'static str = "";
 
     #[tokio::test]
-
     async fn login_test() {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
 
@@ -48,7 +47,13 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let _ = UniversalClient::auto_login(USER.into(), PWD.into()).await;
+        let uni_client = UniversalClient::auto_login(USER.into(), PWD.into()).await;
+
+        let locker = uni_client.visitor();
+        let mut visitor = locker.lock().unwrap();
+        let app = visitor.visit_application::<JwcasApplication>();
+        app.login().await;
+        app.get_class_list().await;
     }
 
     #[tokio::test]

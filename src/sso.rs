@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode};
+use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode, Url};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 
@@ -42,6 +42,7 @@ where
         if response.status() == StatusCode::FOUND {
             // redirect to webvpn root
             // recursion to get the login page
+
             if let Ok(response) = recursion_cookies_handle(
                 client.clone(),
                 cookies.clone(),
@@ -67,10 +68,11 @@ where
                 if let Ok(response) = client.post(url).form(&login_param).send().await {
                     let redirect_location = response
                         .headers()
-                        .get("Location")
+                        .get("location")
                         .unwrap()
                         .to_str()
                         .unwrap();
+
                     if let Ok(response) = client
                         .get(redirect_location)
                         .headers(DEFAULT_HEADERS.clone())
@@ -80,8 +82,7 @@ where
                         cookies
                             .lock()
                             .unwrap()
-                            .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL)
-                            .debug_url_cookies(&ROOT_VPN_URL);
+                            .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
                         return Ok(UniversalSSOLogin {
                             response,
                             login_connect_type: LoginConnectType::WEBVPN,

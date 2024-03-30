@@ -1,6 +1,6 @@
-use reqwest::{StatusCode, Url};
+use reqwest::Url;
 
-use crate::client::UserClient;
+use crate::{client::UserClient, cookies_io::CookiesIOExt};
 
 use super::app::Application;
 pub struct JwcasApplication<'a> {
@@ -16,28 +16,43 @@ impl<'a> Application<'a> for JwcasApplication<'a> {
 }
 
 impl<'a> JwcasApplication<'a> {
-    pub fn login(&self) {
-        let _api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
+    pub async fn login(&self) {
+        let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
+        self.client.initialize_url(&api);
+        let reqwest_client = self.client.get_client();
+        if let Ok(response) = reqwest_client.get(api).send().await {
+            let redirect_url = response
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap();
+            self.client.initialize_url(redirect_url);
+            if let Ok(response) = reqwest_client.get(redirect_url).send().await {
+                let redirect_url = response
+                    .headers()
+                    .get("location")
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                self.client.initialize_url(redirect_url);
+                if let Ok(_) = reqwest_client.get(redirect_url).send().await {
+                    // may handle something later here
+                }
+            }
+        }
     }
     pub async fn get_class_list(&self) {
         let api = format!("{}/web_jxrw/cx_kb_xsgrkb.aspx", self.root);
-        self.client.initialize_url(api.as_str());
+        self.client.initialize_url(&api);
+        self.client
+            .get_cookies()
+            .lock()
+            .unwrap()
+            .debug_url_cookies(&Url::parse(&api).unwrap());
         let reqwest_client = self.client.get_client();
-        if let Ok(response) = reqwest_client.get(Url::parse(&api).unwrap()).send().await {
-            if response.status() == StatusCode::FOUND {
-                if let Ok(_response) = reqwest_client
-                    .get(
-                        response
-                            .headers()
-                            .get("location")
-                            .unwrap()
-                            .to_str()
-                            .unwrap(),
-                    )
-                    .send()
-                    .await
-                {}
-            }
+        if let Ok(response) = reqwest_client.get(api).send().await {
+            println!("{}", response.text().await.unwrap());
         }
     }
 
