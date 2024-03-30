@@ -8,7 +8,7 @@ use crate::{cookies_io::CookiesIOExt, fields::DEFAULT_HEADERS};
 
 #[async_recursion]
 pub async fn recursion_cookies_handle(
-    client: Client,
+    client: Arc<Client>,
     cookies: Arc<CookieStoreMutex>,
     url: &str,
     cookie_store_url: &Url,

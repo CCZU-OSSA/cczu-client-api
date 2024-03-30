@@ -1,7 +1,7 @@
 use crate::client::UserClient;
 use crate::cookies_io::CookiesIOExt;
 use crate::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
-use crate::sso::sso_login;
+use crate::sso::universal_sso_login;
 use crate::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
 };
@@ -23,7 +23,7 @@ pub struct WebVpnClient {
 impl WebVpnClient {
     pub fn new(user: String, pwd: String) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
-        WebVpnClient {
+        Self {
             user,
             pwd,
             client: Arc::new(
@@ -39,50 +39,51 @@ impl WebVpnClient {
         }
     }
 
+    pub fn from_custom(
+        client: Arc<Client>,
+        cookies: Arc<CookieStoreMutex>,
+        user: String,
+        pwd: String,
+    ) -> Self {
+        Self {
+            user,
+            pwd,
+            client,
+            cookies,
+            login_info: None,
+            server_map: None,
+        }
+    }
+
     /// SSO Login
     /// if Ok, return `ElinkUserInfo` else return Err(message)
     pub async fn sso_login(&mut self) -> Result<ElinkLoginInfo, String> {
-        if let Ok(response) = sso_login(
+        if let Ok(login) = universal_sso_login(
             self.get_client(),
             self.get_cookies(),
             self.user.clone(),
             self.pwd.clone(),
-            format!("{}/enlink/api/client/callback/cas", ROOT_VPN),
         )
         .await
         {
-            if response.status() == StatusCode::FOUND {
-                let redirect_location = response
-                    .headers()
-                    .get("Location")
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
-                if let Ok(response) = self
-                    .client
-                    .get(redirect_location)
-                    .headers(DEFAULT_HEADERS.clone())
-                    .send()
-                    .await
-                {
-                    if let Some(cookie) = &response
-                        .cookies()
-                        .filter(|cookie| cookie.name() == "clientInfo")
-                        .collect::<Vec<Cookie>>()
-                        .first()
-                    {
-                        let json =
-                            String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap())
-                                .unwrap();
+            let response = login.response;
 
-                        let data: ElinkLoginInfo = serde_json::from_str(json.as_str()).unwrap();
-                        self.login_info = Some(data.clone());
+            if let Some(cookie) = &response
+                .cookies()
+                .filter(|cookie| cookie.name() == "clientInfo")
+                .collect::<Vec<Cookie>>()
+                .first()
+            {
+                let json =
+                    String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
 
-                        return Ok(data);
-                    }
-                }
+                let data: ElinkLoginInfo = serde_json::from_str(json.as_str()).unwrap();
+                self.login_info = Some(data.clone());
+
+                return Ok(data);
             }
         }
+
         Err("无法使用SSO登录，账户密码错误?".into())
     }
 

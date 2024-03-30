@@ -7,7 +7,7 @@ use crate::{
     client::UserClient,
     cookies_io::CookiesIOExt,
     fields::{ROOT_SSO, ROOT_SSO_URL, ROOT_YWTB},
-    sso::sso_login,
+    sso::universal_sso_login,
 };
 
 pub struct CommonClient {
@@ -33,13 +33,27 @@ impl CommonClient {
         }
     }
 
+    pub fn from_custom(
+        client: Arc<Client>,
+        cookies: Arc<CookieStoreMutex>,
+        user: String,
+        pwd: String,
+    ) -> Self {
+        Self {
+            user,
+            pwd,
+            client,
+            cookies,
+        }
+    }
+
+    // Not Ready to use.
     pub async fn sso_login(&self) -> Result<(), String> {
-        let result = sso_login(
+        let result = universal_sso_login(
             self.get_client(),
             self.get_cookies(),
             self.user.clone(),
             self.pwd.clone(),
-            ROOT_YWTB.to_owned(),
         )
         .await;
         if let Ok(_) = result {

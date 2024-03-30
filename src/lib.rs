@@ -48,11 +48,7 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let universal = UniversalClient::common(USER.into(), PWD.into());
-        let visitor = universal.visitor();
-        let mut locker = visitor.lock().unwrap();
-        let jwcas_app = locker.visit_application::<JwcasApplication>();
-        jwcas_app.get_class_list().await;
+        let _ = UniversalClient::auto_login(USER.into(), PWD.into()).await;
     }
 
     #[tokio::test]
