@@ -3,13 +3,15 @@ pub mod client;
 pub mod common;
 pub mod cookies_io;
 pub mod fields;
+pub mod recursion;
 pub mod sso;
 pub mod types;
 pub mod universal;
 pub mod webvpn;
+
 #[cfg(test)]
 mod test {
-    use crate::app::app::Application;
+    use crate::app::base::Application;
 
     use super::common::CommonClient;
 
@@ -21,26 +23,12 @@ mod test {
     const PWD: &'static str = "";
 
     #[tokio::test]
-
     async fn login_test() {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
 
-        match client.common_login().await {
+        match client.sso_login().await {
             Ok(json) => {
                 println!("{:?}", json);
-                // The user visit service test
-                match client.get_visit_service_by_user().await {
-                    Ok(json) => {
-                        for service in json.data.unwrap() {
-                            if service.name.unwrap().contains("一网通办") {
-                                // 第一步: 取得一网通办url
-                                let url = service.url_plus.unwrap();
-                                println!("{}", url)
-                            }
-                        }
-                    }
-                    Err(message) => println!("{}", message),
-                }
             }
             Err(message) => println!("{}", message),
         };
@@ -60,11 +48,13 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let universal = UniversalClient::common(USER.into(), PWD.into());
-        let visitor = universal.visitor();
-        let mut locker = visitor.lock().unwrap();
-        let jwcas_app = locker.visit_application::<JwcasApplication>();
-        jwcas_app.get_class_list().await;
+        let uni_client = UniversalClient::auto_login(USER.into(), PWD.into()).await;
+
+        let locker = uni_client.visitor();
+        let mut visitor = locker.lock().unwrap();
+        let app = visitor.visit_application::<JwcasApplication>();
+        app.login().await.unwrap();
+        app.get_classlist_html().await;
     }
 
     #[tokio::test]
@@ -72,7 +62,7 @@ mod test {
         let mut client = CommonClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
         let app = JwcasApplication::from_client(&mut client);
-        app.get_class_list().await;
+        app.get_classlist_html().await;
     }
 
     #[tokio::test]
@@ -80,6 +70,6 @@ mod test {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
         let app = JwcasApplication::from_client(&mut client);
-        app.get_class_list().await;
+        app.get_classlist_html().await;
     }
 }

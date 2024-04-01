@@ -1,13 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{Client, Response, Url};
+use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 
 use crate::{
     cookies_io::CookiesIOExt,
-    fields::{DEFAULT_HEADERS, ROOT_SSO},
+    fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
+    recursion::recursion_cookies_handle,
+    types::{LoginConnectType, UniversalSSOLogin},
 };
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
@@ -26,55 +28,94 @@ pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
     hidden_values
 }
 
-pub async fn sso_login<S>(
+pub async fn universal_sso_login<S>(
     client: Arc<Client>,
     cookies: Arc<CookieStoreMutex>,
     user: S,
     pwd: S,
-    service: S,
-) -> Result<Response, String>
+) -> Result<UniversalSSOLogin, String>
 where
-    S: Into<String>,
+    S: Into<String> + Clone,
 {
-    let mut dom = String::new();
-    let url: String = format!("{}/sso/login?service={}", ROOT_SSO, service.into());
+    if let Ok(response) = client.get(ROOT_SSO_LOGIN).send().await {
+        // use webvpn
+        if response.status() == StatusCode::FOUND {
+            // redirect to webvpn root
+            // recursion to get the login page
 
-    if let Ok(response) = client
-        .get(url.clone())
-        .headers(DEFAULT_HEADERS.clone())
-        .send()
-        .await
-    {
-        let text = response.text().await;
+            if let Ok(response) = recursion_cookies_handle(
+                client.clone(),
+                cookies.clone(),
+                response
+                    .headers()
+                    .get("location")
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+                &ROOT_VPN_URL,
+            )
+            .await
+            {
+                let url = response.url().clone();
+                let dom = response.text().await.unwrap();
+                let mut login_param = parse_hidden_values(dom.as_str());
+                login_param.insert("username".into(), user.clone().into());
+                login_param.insert(
+                    "password".into(),
+                    BASE64_STANDARD.encode(pwd.clone().into()),
+                );
 
-        if let Ok(text) = text {
-            dom = text;
+                if let Ok(response) = client.post(url).form(&login_param).send().await {
+                    let redirect_location = response
+                        .headers()
+                        .get("location")
+                        .unwrap()
+                        .to_str()
+                        .unwrap();
+
+                    if let Ok(response) = client
+                        .get(redirect_location)
+                        .headers(DEFAULT_HEADERS.clone())
+                        .send()
+                        .await
+                    {
+                        cookies
+                            .lock()
+                            .unwrap()
+                            .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
+                        return Ok(UniversalSSOLogin {
+                            response,
+                            login_connect_type: LoginConnectType::WEBVPN,
+                        });
+                    };
+                };
+            }
         }
+        // connect `cczu` and don't need to redirect
+        if response.status() == StatusCode::OK {
+            let dom = response.text().await.unwrap();
+            let mut login_param = parse_hidden_values(dom.as_str());
+            login_param.insert("username".into(), user.into());
+            login_param.insert("password".into(), BASE64_STANDARD.encode(pwd.into()));
 
-        cookies.lock().unwrap().copy_cookies(
-            &url.parse::<Url>().unwrap(),
-            &ROOT_SSO.parse::<Url>().unwrap(),
-        );
+            if let Ok(response) = client.post(ROOT_SSO_LOGIN).form(&login_param).send().await {
+                return Ok(UniversalSSOLogin {
+                    response,
+                    login_connect_type: LoginConnectType::COMMON,
+                });
+            };
+        }
     }
+    Err("Can't login! Please check your account!".into())
+}
 
-    if dom.is_empty() {
-        return Err("SSO 登录失败(无法访问)，请尝试普通登录...".into());
+pub async fn is_webvpn_available() -> bool {
+    let client = ClientBuilder::new()
+        .redirect(Policy::none())
+        .build()
+        .unwrap();
+    if let Ok(response) = client.get(ROOT_SSO_LOGIN).send().await {
+        return response.status() == StatusCode::FOUND;
     }
-
-    let mut login_param = parse_hidden_values(dom.as_str());
-    login_param.insert("username".into(), user.into());
-    login_param.insert("password".into(), BASE64_STANDARD.encode(pwd.into()));
-
-    if let Ok(response) = client
-        .post(format!("{}/sso/login", ROOT_SSO))
-        .headers(DEFAULT_HEADERS.clone())
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .form(&login_param)
-        .send()
-        .await
-    {
-        return Ok(response);
-    }
-
-    Err("SSO 登录失败".into())
+    false
 }

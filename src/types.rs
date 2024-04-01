@@ -1,5 +1,6 @@
 use aes::Aes128Enc;
 use cbc::Encryptor;
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
@@ -122,4 +123,14 @@ pub struct ElinkServiceData {
     pub host_md5: Option<String>,
     #[serde(alias = "gatewayVo")]
     pub gateway_vo: Option<ElinkServiceGatewayData>,
+}
+
+pub enum LoginConnectType {
+    WEBVPN,
+    COMMON,
+}
+
+pub struct UniversalSSOLogin {
+    pub response: Response,
+    pub login_connect_type: LoginConnectType,
 }

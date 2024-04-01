@@ -1,8 +1,10 @@
-use reqwest::{StatusCode, Url};
+use std::fmt::Display;
+
+use reqwest::StatusCode;
 
 use crate::client::UserClient;
 
-use super::app::Application;
+use super::base::Application;
 pub struct JwcasApplication<'a> {
     client: &'a mut dyn UserClient,
     root: String,
@@ -16,33 +18,51 @@ impl<'a> Application<'a> for JwcasApplication<'a> {
 }
 
 impl<'a> JwcasApplication<'a> {
-    pub fn login(&self) {
-        let _api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
-    }
-    pub async fn get_class_list(&self) {
-        let api = format!("{}/web_jxrw/cx_kb_xsgrkb.aspx", self.root);
-        self.client.initialize_url(api.as_str());
+    pub async fn login(&self) -> Result<(), String> {
+        let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
+        self.client.initialize_url(&api);
         let reqwest_client = self.client.get_client();
-        if let Ok(response) = reqwest_client.get(Url::parse(&api).unwrap()).send().await {
-            if response.status() == StatusCode::FOUND {
-                if let Ok(response) = reqwest_client
-                    .get(
-                        response
-                            .headers()
-                            .get("location")
-                            .unwrap()
-                            .to_str()
-                            .unwrap(),
-                    )
-                    .send()
-                    .await
-                {}
+        if let Ok(response) = reqwest_client.get(api).send().await {
+            let redirect_url = response
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
+
+            self.client.initialize_url(&redirect_url);
+            if let Ok(response) = reqwest_client.get(redirect_url).send().await {
+                if response.status() != StatusCode::FOUND {
+                    return Err("账户认证失败，请检查登录".into());
+                }
+                let redirect_url = response
+                    .headers()
+                    .get("location")
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                self.client.initialize_url(redirect_url);
+                let _ = reqwest_client.get(redirect_url).send().await;
             }
         }
+        Ok(())
+    }
+    pub async fn get_classlist_html(&self) -> Option<String> {
+        self.get_api_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
     }
 
-    pub async fn get_grades_list(&self) {
-        let api = format!("{}/web_cjgl/cx_cj_xh.aspx", self.root);
-        self.client.initialize_url(api.as_str());
+    pub async fn get_gradelist_html(&self) -> Option<String> {
+        self.get_api_html("/web_cjgl/cx_cj_xh.aspx").await
+    }
+
+    pub async fn get_api_html(&self, service: impl Display) -> Option<String> {
+        let api = format!("{}{}", self.root, service);
+        self.client.initialize_url(&api);
+        if let Ok(response) = self.client.get_client().get(api).send().await {
+            Some(response.text().await.unwrap())
+        } else {
+            None
+        }
     }
 }

@@ -13,7 +13,6 @@ reqwest = { version = "0.12", features = [
     "native-tls-vendored",
 ] }
 reqwest_cookie_store = "0.7"
-
 once_cell = "*"
 scraper = "*"
 base64 = "*"
@@ -25,3 +24,14 @@ rand = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 cookie = "*"
+async-recursion = "*"
+
+# calendar
+regex = { version = "*", optional = true }
+uuid = { version = "1.7.0", features = ["v4", "v3"], optional = true }
+chrono = { version = "0.4.37", optional = true }
+icalendar = { version = "0.16.0", optional = true }
+
+[features]
+calendar = ["uuid", "regex", "chrono", "icalendar"]
+default = ["calendar"]
