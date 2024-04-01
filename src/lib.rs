@@ -8,9 +8,10 @@ pub mod sso;
 pub mod types;
 pub mod universal;
 pub mod webvpn;
+
 #[cfg(test)]
 mod test {
-    use crate::app::app::Application;
+    use crate::app::base::Application;
 
     use super::common::CommonClient;
 

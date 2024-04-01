@@ -1,6 +1,6 @@
 use crate::client::UserClient;
 
-use super::app::Application;
+use super::base::Application;
 
 pub struct YwtbApplication<'a> {
     pub client: &'a mut dyn UserClient,

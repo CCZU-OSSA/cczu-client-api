@@ -4,7 +4,7 @@ use reqwest::StatusCode;
 
 use crate::client::UserClient;
 
-use super::app::Application;
+use super::base::Application;
 pub struct JwcasApplication<'a> {
     client: &'a mut dyn UserClient,
     root: String,

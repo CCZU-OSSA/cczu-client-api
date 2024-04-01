@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::app::app::Application;
+use crate::app::base::Application;
 use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
 
