@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode, Url};
+use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 

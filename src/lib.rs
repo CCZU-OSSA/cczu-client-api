@@ -52,8 +52,8 @@ mod test {
         let locker = uni_client.visitor();
         let mut visitor = locker.lock().unwrap();
         let app = visitor.visit_application::<JwcasApplication>();
-        app.login().await;
-        app.get_class_list().await;
+        app.login().await.unwrap();
+        app.get_classlist_html().await;
     }
 
     #[tokio::test]
@@ -61,7 +61,7 @@ mod test {
         let mut client = CommonClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
         let app = JwcasApplication::from_client(&mut client);
-        app.get_class_list().await;
+        app.get_classlist_html().await;
     }
 
     #[tokio::test]
@@ -69,6 +69,6 @@ mod test {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
         let app = JwcasApplication::from_client(&mut client);
-        app.get_class_list().await;
+        app.get_classlist_html().await;
     }
 }

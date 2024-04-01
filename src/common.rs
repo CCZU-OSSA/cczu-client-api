@@ -96,7 +96,7 @@ impl UserClient for CommonClient {
         self.get_cookies()
             .lock()
             .unwrap()
-            .copy_cookies(&ROOT_SSO_URL, &Url::parse(url).unwrap());
+            .copy_cookies_raw(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
 
     fn get_user(&self) -> String {
