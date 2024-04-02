@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 use reqwest::StatusCode;
+use scraper::{ElementRef, Html, Selector};
 
 use crate::client::UserClient;
 
-use super::base::Application;
+use super::{base::Application, jwcas_type::GradeData};
 pub struct JwcasApplication<'a> {
     client: &'a mut dyn UserClient,
     root: String,
@@ -65,4 +66,27 @@ impl<'a> JwcasApplication<'a> {
             None
         }
     }
+
+    pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>, String> {
+        if let Some(text) = self.get_gradelist_html().await {
+            let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
+            let dom = Html::parse_document(&text);
+            Ok(dom
+                .select(&selector)
+                .map(|e| {
+                    let childs: Vec<ElementRef> = e.child_elements().collect();
+                    GradeData {
+                        name: extract_string(childs.get(5).unwrap()),
+                        point: extract_string(childs.get(8).unwrap()),
+                        grade: extract_string(childs.get(9).unwrap()),
+                    }
+                })
+                .collect())
+        } else {
+            Err("获取页面失败".into())
+        }
+    }
+}
+fn extract_string(element: &ElementRef) -> String {
+    element.text().next().unwrap().to_string()
 }

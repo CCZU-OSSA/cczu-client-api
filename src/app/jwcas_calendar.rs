@@ -1,15 +1,32 @@
-use super::{jwcas::JwcasApplication, jwcas_calendar_type::{ClassInfo, Schedule, EVENT_PROP}};
+use super::{
+    jwcas::JwcasApplication,
+    jwcas_calendar_type::{ClassInfo, Schedule, EVENT_PROP},
+};
+use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use icalendar::{Alarm, Calendar, Component, Event, EventLike, Trigger};
 use regex::Regex;
 use scraper::{Html, Selector};
 use std::{collections::HashMap, future::Future};
 use uuid::Uuid;
 
 pub trait JwcasApplicationCalendarExt {
-    fn get_class_icalendar(&self) -> impl Future<Output = Result<Vec<ClassInfo>, String>>;
+    fn get_classinfo_vec(&self) -> impl Future<Output = Result<Vec<ClassInfo>, String>>;
+    fn generate_icalendar_from_classlist(
+        &self,
+        classlist: &mut Vec<ClassInfo>,
+        firstweekdate: String,
+        schedule: Schedule,
+        reminder: Option<i32>,
+    ) -> Calendar;
+    fn generate_icalendar(
+        &self,
+        firstweekdate: String,
+        schedule: Schedule,
+        reminder: Option<i32>,
+    ) -> impl Future<Output = Option<Calendar>>;
 }
-
 impl<'a> JwcasApplicationCalendarExt for JwcasApplication<'a> {
-    async fn get_class_icalendar(&self) -> Result<Vec<ClassInfo>, String> {
+    async fn get_classinfo_vec(&self) -> Result<Vec<ClassInfo>, String> {
         let text = self.get_classlist_html().await.unwrap();
 
         let doc = Html::parse_document(&text);
@@ -86,7 +103,7 @@ impl<'a> JwcasApplicationCalendarExt for JwcasApplication<'a> {
                             let re = Regex::new(r#"(\S+)? *([单双]?) *((\d+-\d+,?)+)"#).unwrap();
                             let pattern = course.replace(&classname, "").trim().to_string();
                             let Some(data) = re.captures(pattern.as_str()) else {
-                                panic!("Course information parsing abnormal")
+                                panic!("Course information parsing abnormal!")
                             }; //'X立德楼409  7-8,'
 
                             let info = ClassInfo::new(
@@ -116,48 +133,32 @@ impl<'a> JwcasApplicationCalendarExt for JwcasApplication<'a> {
             }
         }
 
-        Ok(course_info.values().map(|e| e.clone()).collect())
-    }
-}
-
-use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use icalendar::{Alarm, Calendar, Component, Event, EventLike, Trigger};
-
-pub struct ICal {
-    pub firstweekdate: String,
-    pub schedule: Schedule,
-    pub classlist: Vec<ClassInfo>,
-}
-
-pub fn get_reminder(reminder: &str) -> Option<i32> {
-    if reminder.is_empty() {
-        None
-    } else {
-        Some(reminder.parse::<i32>().unwrap_or(15))
-    }
-}
-
-impl ICal {
-    pub fn new(firstweekdate: String, classlist: Vec<ClassInfo>) -> Self {
-        Self {
-            firstweekdate,
-            schedule: Schedule::get_schedule(),
-            classlist,
-        }
+        Ok(course_info
+            .values()
+            .into_iter()
+            .map(|e| e.clone())
+            .collect())
     }
 
-    pub fn to_ical(&mut self, reminder: Option<i32>) -> Calendar {
-        let mut cal = Calendar::new();
-        cal.timezone("Asia/Shanghai").name("课程表");
-        self.classlist.iter_mut().for_each(|e| {
-            e.with_startdate(&self.firstweekdate);
+    /// firstweekdate `YYYYMMDD`
+    fn generate_icalendar_from_classlist(
+        &self,
+        classlist: &mut Vec<ClassInfo>,
+        firstweekdate: String,
+        schedule: Schedule,
+        reminder: Option<i32>,
+    ) -> Calendar {
+        let mut calendar = Calendar::new();
+        calendar.timezone("Asia/Shanghai").name("课程表");
+        classlist.iter_mut().for_each(|e| {
+            e.with_startdate(&firstweekdate);
         });
 
-        for info in self.classlist.iter() {
-            let start_time = self.schedule.classtime[info.classtime.first().unwrap() - 1]
+        for info in classlist.iter() {
+            let start_time = schedule.classtime[info.classtime.first().unwrap() - 1]
                 .clone()
                 .start_time;
-            let end_time = self.schedule.classtime[info.classtime.last().unwrap() - 1]
+            let end_time = schedule.classtime[info.classtime.last().unwrap() - 1]
                 .clone()
                 .end_time;
             let create_time = Utc::now();
@@ -194,14 +195,14 @@ impl ICal {
                     ));
                 }
 
-                cal.push(event);
+                calendar.push(event);
             }
         }
 
         // week
 
         let mut fweek = NaiveDateTime::new(
-            NaiveDate::parse_from_str(&self.firstweekdate.clone(), "%Y%m%d").unwrap(),
+            NaiveDate::parse_from_str(&firstweekdate, "%Y%m%d").unwrap(),
             NaiveTime::default(),
         );
 
@@ -221,10 +222,29 @@ impl ICal {
                 event.add_property(k, v);
             });
 
-            cal.push(event.clone());
+            calendar.push(event.clone());
             fweek += Duration::days(7);
         }
 
-        cal
+        calendar
+    }
+
+    /// firstweekdate `YYYYMMDD`
+    async fn generate_icalendar(
+        &self,
+        firstweekdate: String,
+        schedule: Schedule,
+        reminder: Option<i32>,
+    ) -> Option<Calendar> {
+        if let Ok(mut classlist) = self.get_classinfo_vec().await {
+            Some(self.generate_icalendar_from_classlist(
+                &mut classlist,
+                firstweekdate,
+                schedule,
+                reminder,
+            ))
+        } else {
+            None
+        }
     }
 }

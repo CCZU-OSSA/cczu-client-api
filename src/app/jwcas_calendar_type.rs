@@ -30,15 +30,19 @@ pub struct Schedule {
     pub classtime: Vec<ScheduleElement>,
 }
 
+impl Default for Schedule {
+    fn default() -> Self {
+        serde_json::from_str(include_str!("jwcas_calendar_time.json")).unwrap()
+    }
+}
+
 impl Schedule {
-    pub fn get_schedule() -> Self {
-        let name = "custom.config.json";
-        let _default = include_str!("jwcas_calendar_time.json");
-        if Path::new(name).exists() {
-            serde_json::from_str(&read_to_string(name).unwrap_or(_default.to_string())).unwrap()
-        } else {
-            serde_json::from_str(_default).unwrap()
-        }
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+        serde_json::from_str(&read_to_string(path).unwrap()).unwrap()
+    }
+
+    pub fn from_str(data: &str) -> Self {
+        serde_json::from_str(data).unwrap()
     }
 }
 
@@ -76,11 +80,11 @@ impl ClassInfo {
     pub fn add_classtime(&mut self, value: usize) {
         self.classtime.push(value)
     }
-    #[allow(dead_code)]
+
     pub fn add_week(&mut self, value: String) {
         self.week.push(value)
     }
-    #[allow(dead_code)]
+
     pub fn merge(&mut self, rhs: &ClassInfo) -> &mut Self {
         rhs.week.iter().for_each(|v| {
             if !self.week.contains(v) {
