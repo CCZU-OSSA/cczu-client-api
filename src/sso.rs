@@ -119,3 +119,16 @@ pub async fn is_webvpn_available() -> bool {
     }
     false
 }
+
+pub async fn session_available(client: Arc<reqwest::Client>) -> bool {
+    if let Ok(response) = client.get("http://sso.cczu.edu.cn/sso/login").send().await {
+        if response.status() == StatusCode::OK {
+            return false;
+        }
+
+        if response.status() == StatusCode::FOUND {
+            return true;
+        }
+    }
+    false
+}

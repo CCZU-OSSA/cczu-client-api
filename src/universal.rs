@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::{
     client::UserClient,
     common::CommonClient,
-    sso::{is_webvpn_available, universal_sso_login},
+    sso::{is_webvpn_available, session_available, universal_sso_login},
     types::LoginConnectType,
     webvpn::WebVpnClient,
 };
@@ -56,7 +56,7 @@ impl UniversalClient {
         }
     }
 
-    pub async fn from_cookies(user: String, password: String, cookies: String) -> Self {
+    pub async fn from_cookies(user: String, password: String, cookies: String) -> Option<Self> {
         let provider: reqwest_cookie_store::CookieStore = serde_json::from_str(&cookies).unwrap();
         let cookies = Arc::new(CookieStoreMutex::new(provider));
         let client = Arc::new(
@@ -66,10 +66,18 @@ impl UniversalClient {
                 .build()
                 .unwrap(),
         );
-        todo!("implement check cookies here");
+        if session_available(client.clone()).await {
+            if is_webvpn_available().await {
+                Some(Self::webvpn_custom(client, cookies, user, password))
+            } else {
+                Some(Self::common_custom(client, cookies, user, password))
+            }
+        } else {
+            Self::auto_login(user, password).await
+        }
     }
 
-    pub async fn auto_login(user: String, password: String) -> Self {
+    pub async fn auto_login(user: String, password: String) -> Option<Self> {
         let cookies = Arc::new(CookieStoreMutex::default());
         let client = Arc::new(
             ClientBuilder::new()
@@ -78,19 +86,24 @@ impl UniversalClient {
                 .build()
                 .unwrap(),
         );
-        let login_info = universal_sso_login(
+        if let Ok(login_info) = universal_sso_login(
             client.clone(),
             cookies.clone(),
             user.clone(),
             password.clone(),
         )
         .await
-        .unwrap();
-
-        match login_info.login_connect_type {
-            LoginConnectType::COMMON => Self::common_custom(client, cookies, user, password),
-            LoginConnectType::WEBVPN => Self::webvpn_custom(client, cookies, user, password),
-        }
+        {
+            return match login_info.login_connect_type {
+                LoginConnectType::COMMON => {
+                    Some(Self::common_custom(client, cookies, user, password))
+                }
+                LoginConnectType::WEBVPN => {
+                    Some(Self::webvpn_custom(client, cookies, user, password))
+                }
+            };
+        };
+        None
     }
 
     pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
