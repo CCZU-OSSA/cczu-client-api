@@ -22,41 +22,54 @@ impl UniversalClient {
         }
     }
 
-    pub fn common(user: String, pwd: String) -> Self {
-        Self::new(CommonClient::new(user, pwd))
+    pub fn common(user: String, password: String) -> Self {
+        Self::new(CommonClient::new(user, password))
     }
 
-    pub fn webvpn(user: String, pwd: String) -> Self {
-        Self::new(WebVpnClient::new(user, pwd))
+    pub fn webvpn(user: String, password: String) -> Self {
+        Self::new(WebVpnClient::new(user, password))
     }
 
     pub fn webvpn_custom(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
         user: String,
-        pwd: String,
+        password: String,
     ) -> Self {
-        Self::new(WebVpnClient::from_custom(client, cookies, user, pwd))
+        Self::new(WebVpnClient::from_custom(client, cookies, user, password))
     }
 
     pub fn common_custom(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
         user: String,
-        pwd: String,
+        password: String,
     ) -> Self {
-        Self::new(CommonClient::from_custom(client, cookies, user, pwd))
+        Self::new(CommonClient::from_custom(client, cookies, user, password))
     }
 
-    pub async fn auto(user: String, pwd: String) -> Self {
+    pub async fn auto(user: String, password: String) -> Self {
         if is_webvpn_available().await {
-            Self::webvpn(user, pwd)
+            Self::webvpn(user, password)
         } else {
-            Self::common(user, pwd)
+            Self::common(user, password)
         }
     }
 
-    pub async fn auto_login(user: String, pwd: String) -> Self {
+    pub async fn from_cookies(user: String, password: String, cookies: String) -> Self {
+        let provider: reqwest_cookie_store::CookieStore = serde_json::from_str(&cookies).unwrap();
+        let cookies = Arc::new(CookieStoreMutex::new(provider));
+        let client = Arc::new(
+            ClientBuilder::new()
+                .redirect(Policy::none())
+                .cookie_provider(cookies.clone())
+                .build()
+                .unwrap(),
+        );
+        todo!("implement check cookies here");
+    }
+
+    pub async fn auto_login(user: String, password: String) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
         let client = Arc::new(
             ClientBuilder::new()
@@ -65,14 +78,18 @@ impl UniversalClient {
                 .build()
                 .unwrap(),
         );
-        let login_info =
-            universal_sso_login(client.clone(), cookies.clone(), user.clone(), pwd.clone())
-                .await
-                .unwrap();
+        let login_info = universal_sso_login(
+            client.clone(),
+            cookies.clone(),
+            user.clone(),
+            password.clone(),
+        )
+        .await
+        .unwrap();
 
         match login_info.login_connect_type {
-            LoginConnectType::COMMON => Self::common_custom(client, cookies, user, pwd),
-            LoginConnectType::WEBVPN => Self::webvpn_custom(client, cookies, user, pwd),
+            LoginConnectType::COMMON => Self::common_custom(client, cookies, user, password),
+            LoginConnectType::WEBVPN => Self::webvpn_custom(client, cookies, user, password),
         }
     }
 
