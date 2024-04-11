@@ -12,23 +12,25 @@ use reqwest::{redirect::Policy, Client, ClientBuilder};
 use reqwest_cookie_store::CookieStoreMutex;
 
 /// Universal Can chose the ClientType.
+#[derive(Clone)]
 pub struct UniversalClient {
     client: Arc<Mutex<dyn UserClient>>,
 }
 
+unsafe impl Send for UniversalClient {}
+unsafe impl Sync for UniversalClient {}
+
 impl UniversalClient {
-    pub fn new(client: impl UserClient + 'static) -> Self {
-        Self {
-            client: Arc::new(Mutex::new(client)),
-        }
+    pub fn new(client: Arc<Mutex<dyn UserClient>>) -> Self {
+        Self { client }
     }
 
     pub fn common(user: String, password: String) -> Self {
-        Self::new(CommonClient::new(user, password))
+        Self::new(Arc::new(Mutex::new(CommonClient::new(user, password))))
     }
 
     pub fn webvpn(user: String, password: String) -> Self {
-        Self::new(WebVpnClient::new(user, password))
+        Self::new(Arc::new(Mutex::new(WebVpnClient::new(user, password))))
     }
 
     pub fn webvpn_custom(
@@ -37,7 +39,9 @@ impl UniversalClient {
         user: String,
         password: String,
     ) -> Self {
-        Self::new(WebVpnClient::from_custom(client, cookies, user, password))
+        Self::new(Arc::new(Mutex::new(WebVpnClient::from_custom(
+            client, cookies, user, password,
+        ))))
     }
 
     pub fn common_custom(
@@ -46,7 +50,9 @@ impl UniversalClient {
         user: String,
         password: String,
     ) -> Self {
-        Self::new(CommonClient::from_custom(client, cookies, user, password))
+        Self::new(Arc::new(Mutex::new(CommonClient::from_custom(
+            client, cookies, user, password,
+        ))))
     }
 
     pub async fn auto(user: String, password: String) -> Self {
@@ -121,11 +127,11 @@ impl UniversalClient {
         self.client.clone()
     }
 
-    pub fn visit_application<'a, T>(&'a mut self) -> T
+    pub fn visit_application<T>(&self) -> T
     where
-        T: Application<'a>,
+        T: Application,
     {
-        T::from_client(self)
+        T::from_client(Arc::new(self.clone()))
     }
 }
 

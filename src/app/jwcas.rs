@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use reqwest::StatusCode;
 use scraper::{ElementRef, Html, Selector};
@@ -6,19 +6,21 @@ use scraper::{ElementRef, Html, Selector};
 use crate::client::UserClient;
 
 use super::{base::Application, jwcas_type::GradeData};
-pub struct JwcasApplication<'a> {
-    client: &'a mut dyn UserClient,
+
+#[derive(Clone)]
+pub struct JwcasApplication {
+    client: Arc<dyn UserClient + Send + Sync>,
     root: String,
 }
 
-impl<'a> Application<'a> for JwcasApplication<'a> {
-    fn from_client(client: &'a mut dyn UserClient) -> Self {
+impl Application for JwcasApplication {
+    fn from_client(client: Arc<dyn UserClient + Sync + Send>) -> Self {
         let root = client.redirect("http://219.230.159.132");
         Self { client, root }
     }
 }
 
-impl<'a> JwcasApplication<'a> {
+impl JwcasApplication {
     pub async fn login(&self) -> Result<(), String> {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
         self.client.initialize_url(&api);

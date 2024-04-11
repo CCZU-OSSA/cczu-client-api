@@ -25,7 +25,7 @@ pub trait JwcasApplicationCalendarExt {
         reminder: Option<i32>,
     ) -> impl Future<Output = Option<Calendar>>;
 }
-impl<'a> JwcasApplicationCalendarExt for JwcasApplication<'a> {
+impl JwcasApplicationCalendarExt for JwcasApplication {
     async fn get_classinfo_vec(&self) -> Result<Vec<ClassInfo>, String> {
         let text = self.get_classlist_html().await.unwrap();
 

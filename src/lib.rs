@@ -11,6 +11,8 @@ pub mod webvpn;
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use crate::app::base::Application;
 
     use super::common::CommonClient;
@@ -48,7 +50,7 @@ mod test {
 
     #[tokio::test]
     async fn universal_test() {
-        let mut uni_client = UniversalClient::auto_login(USER.into(), PWD.into())
+        let uni_client = UniversalClient::auto_login(USER.into(), PWD.into())
             .await
             .unwrap();
 
@@ -59,9 +61,9 @@ mod test {
 
     #[tokio::test]
     async fn common_test() {
-        let mut client = CommonClient::new(USER.into(), PWD.into());
+        let client = CommonClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
-        let app = JwcasApplication::from_client(&mut client);
+        let app = JwcasApplication::from_client(Arc::new(client));
         app.get_classlist_html().await;
     }
 
@@ -69,7 +71,7 @@ mod test {
     async fn webvpn_test() {
         let mut client = WebVpnClient::new(USER.into(), PWD.into());
         client.sso_login().await.unwrap();
-        let app = JwcasApplication::from_client(&mut client);
+        let app = JwcasApplication::from_client(Arc::new(client));
         app.get_classlist_html().await;
     }
 }
