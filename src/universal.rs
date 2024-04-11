@@ -74,11 +74,15 @@ impl UniversalClient {
                 Some(Self::common_custom(client, cookies, user, password))
             }
         } else {
-            Self::auto_login(user, password).await
+            if let Ok(client) = Self::auto_login(user, password).await {
+                Some(client)
+            } else {
+                None
+            }
         }
     }
 
-    pub async fn auto_login(user: String, password: String) -> Option<Self> {
+    pub async fn auto_login(user: String, password: String) -> Result<Self, String> {
         let cookies = Arc::new(CookieStoreMutex::default());
         let client = Arc::new(
             ClientBuilder::new()
@@ -87,24 +91,25 @@ impl UniversalClient {
                 .build()
                 .unwrap(),
         );
-        if let Ok(login_info) = universal_sso_login(
+
+        let login_result = universal_sso_login(
             client.clone(),
             cookies.clone(),
             user.clone(),
             password.clone(),
         )
-        .await
-        {
+        .await;
+        if let Ok(login_info) = login_result {
             return match login_info.login_connect_type {
                 LoginConnectType::COMMON => {
-                    Some(Self::common_custom(client, cookies, user, password))
+                    Ok(Self::common_custom(client, cookies, user, password))
                 }
                 LoginConnectType::WEBVPN => {
-                    Some(Self::webvpn_custom(client, cookies, user, password))
+                    Ok(Self::webvpn_custom(client, cookies, user, password))
                 }
             };
         };
-        None
+        Err(login_result.err().unwrap())
     }
 
     pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
