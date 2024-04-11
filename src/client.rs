@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::app::base::Application;
 use regex::Regex;
 use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
@@ -16,15 +15,6 @@ pub trait UserClient {
     fn initialize_url(&self, url: &str);
     fn get_user(&self) -> String;
     fn get_pwd(&self) -> String;
-}
-
-impl dyn UserClient {
-    pub fn visit_application<'a, T>(&'a mut self) -> T
-    where
-        T: Application<'a>,
-    {
-        T::from_client(self)
-    }
 }
 
 pub async fn login_wifi(user: String, pwd: String) -> Result<String, String> {
