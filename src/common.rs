@@ -67,7 +67,7 @@ impl CommonClient {
             return Ok(());
         };
 
-        return Err(result.err().unwrap());
+        Err(result.err().unwrap())
     }
 }
 

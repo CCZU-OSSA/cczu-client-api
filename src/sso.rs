@@ -81,6 +81,7 @@ where
                             .lock()
                             .unwrap()
                             .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
+                        println!("{}", response.status());
                         return Ok(UniversalSSOLogin {
                             response,
                             login_connect_type: LoginConnectType::WEBVPN,
@@ -97,6 +98,8 @@ where
             login_param.insert("password".into(), BASE64_STANDARD.encode(pwd.into()));
 
             if let Ok(response) = client.post(ROOT_SSO_LOGIN).form(&login_param).send().await {
+                println!("{}", response.status());
+
                 return Ok(UniversalSSOLogin {
                     response,
                     login_connect_type: LoginConnectType::COMMON,
@@ -118,9 +121,15 @@ pub async fn is_webvpn_available() -> bool {
     false
 }
 
-/// Not ready to use
 pub async fn session_available(client: Arc<reqwest::Client>) -> bool {
-    if let Ok(response) = client.get(ROOT_SSO_LOGIN).send().await {
+    if let Ok(response) = client
+        .get(format!(
+            "{}?service=http://ywtb.cczu.edu.cn/pc/index.html",
+            ROOT_SSO_LOGIN
+        ))
+        .send()
+        .await
+    {
         if response.status() == StatusCode::OK {
             return false;
         }

@@ -99,8 +99,14 @@ impl UniversalClient {
             password.clone(),
         )
         .await;
-        if let Ok(login_info) = login_result {
-            return match login_info.login_connect_type {
+        if let Err(message) = login_result {
+            return Err(message);
+        } else {
+            if !session_available(client.clone()).await {
+                return Err("登录失败, 账户密码错误?".into());
+            }
+
+            return match login_result.unwrap().login_connect_type {
                 LoginConnectType::COMMON => {
                     Ok(Self::common_custom(client, cookies, user, password))
                 }
@@ -109,7 +115,6 @@ impl UniversalClient {
                 }
             };
         };
-        Err(login_result.err().unwrap())
     }
 
     pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
