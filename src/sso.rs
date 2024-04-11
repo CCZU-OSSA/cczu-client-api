@@ -66,13 +66,11 @@ where
                 );
 
                 if let Ok(response) = client.post(url).form(&login_param).send().await {
-                    let redirect_location = response
-                        .headers()
-                        .get("location")
-                        .unwrap()
-                        .to_str()
-                        .unwrap();
-
+                    let redirect_location_header = response.headers().get("location");
+                    if let None = redirect_location_header {
+                        return Err("跳转WebVPN失败".into());
+                    }
+                    let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
                     if let Ok(response) = client
                         .get(redirect_location)
                         .headers(DEFAULT_HEADERS.clone())
@@ -120,13 +118,23 @@ pub async fn is_webvpn_available() -> bool {
     false
 }
 
+/// Not ready to use
 pub async fn session_available(client: Arc<reqwest::Client>) -> bool {
-    if let Ok(response) = client.get("http://sso.cczu.edu.cn/sso/login").send().await {
+    if let Ok(response) = client.get(ROOT_SSO_LOGIN).send().await {
         if response.status() == StatusCode::OK {
             return false;
         }
 
         if response.status() == StatusCode::FOUND {
+            let location = response
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap();
+            if location.contains("sso/login") {
+                return false;
+            }
             return true;
         }
     }

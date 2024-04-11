@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
+    app::base::Application,
     client::UserClient,
     common::CommonClient,
     sso::{is_webvpn_available, session_available, universal_sso_login},
@@ -108,6 +109,13 @@ impl UniversalClient {
 
     pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
         self.client.clone()
+    }
+
+    pub fn visit_application<'a, T>(&'a mut self) -> T
+    where
+        T: Application<'a>,
+    {
+        T::from_client(self)
     }
 }
 
