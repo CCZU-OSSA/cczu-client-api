@@ -51,6 +51,7 @@ impl JwcasApplication {
         }
         Ok(())
     }
+
     pub async fn get_classlist_html(&self) -> Option<String> {
         self.get_api_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
     }

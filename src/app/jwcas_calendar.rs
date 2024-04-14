@@ -27,15 +27,18 @@ pub trait JwcasApplicationCalendarExt {
 }
 impl JwcasApplicationCalendarExt for JwcasApplication {
     async fn get_classinfo_vec(&self) -> Result<Vec<ClassInfo>, String> {
-        let text = self.get_classlist_html().await.unwrap();
-
+        let opt_text = self.get_classlist_html().await;
+        if let None = opt_text {
+            return Err("获取页面错误".into());
+        }
+        let text = opt_text.unwrap();
         let doc = Html::parse_document(&text);
         let tb_up_seletor = Selector::parse(r#"table[id="GVxkall"]"#).unwrap();
         let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
         let tb_up_itemseletor =
-            Selector::parse(r#"tr[class="dg1-item"] > td[style="width:20%;"]"#).unwrap();
+            Selector::parse(r#"tr[class="dg1-item"] > td[width="20%"] > font"#).unwrap();
         let tb_dn_rowseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
-        let tb_dn_itemseletor = Selector::parse(r#"td[style="width:12%;"]"#).unwrap();
+        let tb_dn_itemseletor = Selector::parse(r#"td[width="12%"] > font"#).unwrap();
         let class_namelist: Vec<String> = doc
             .select(&tb_up_seletor)
             .next()
@@ -51,7 +54,7 @@ impl JwcasApplicationCalendarExt for JwcasApplication {
             .select(&tb_dn_rowseletor)
             .map(|e| {
                 e.select(&tb_dn_itemseletor)
-                    .map(|item| item.inner_html())
+                    .map(|item| dbg!(item.inner_html()))
                     .collect()
             })
             .collect();
@@ -59,7 +62,11 @@ impl JwcasApplicationCalendarExt for JwcasApplication {
         for i in 0..7 {
             let mut tmp: Vec<String> = vec![];
             for v in row_matrix.iter() {
-                tmp.push(v[i].clone())
+                if let Some(value) = v.get(i) {
+                    tmp.push(value.clone())
+                } else {
+                    return Err("课程表解析错误".into());
+                }
             }
             column_matrix.push(tmp.clone());
         }
@@ -95,7 +102,7 @@ impl JwcasApplicationCalendarExt for JwcasApplication {
                                         format!("{}/{}", course.clone(), target[index + 1]);
                                     continue;
                                 }
-                                return Err(format!("Unable to resolve course name correctly"));
+                                return Err("Unable to resolve course name correctly".into());
                             }
 
                             let classname = nl[0].clone();
@@ -103,7 +110,7 @@ impl JwcasApplicationCalendarExt for JwcasApplication {
                             let re = Regex::new(r#"(\S+)? *([单双]?) *((\d+-\d+,?)+)"#).unwrap();
                             let pattern = course.replace(&classname, "").trim().to_string();
                             let Some(data) = re.captures(pattern.as_str()) else {
-                                panic!("Course information parsing abnormal!")
+                                return Err("Course information parsing abnormal!".into());
                             }; //'X立德楼409  7-8,'
 
                             let info = ClassInfo::new(

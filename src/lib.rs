@@ -14,6 +14,8 @@ mod test {
     use std::sync::Arc;
 
     use crate::app::base::Application;
+    use crate::app::jwcas_calendar::JwcasApplicationCalendarExt;
+    use crate::app::jwcas_calendar_type::Schedule;
 
     use super::common::CommonClient;
 
@@ -56,7 +58,9 @@ mod test {
 
         let app = uni_client.visit_application::<JwcasApplication>();
         app.login().await.unwrap();
-        app.get_classlist_html().await;
+        app.generate_icalendar("20240414".into(), Schedule::default(), None)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
