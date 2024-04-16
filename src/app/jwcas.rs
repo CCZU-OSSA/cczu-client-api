@@ -57,7 +57,7 @@ impl JwcasApplication {
     }
 
     pub async fn get_gradelist_html(&self) -> Option<String> {
-        self.get_api_html("/web_cjgl/cx_cj_xh.aspx").await
+        self.get_api_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
     pub async fn get_api_html(&self, service: impl Display) -> Option<String> {
@@ -82,11 +82,11 @@ impl JwcasApplication {
                 .select(&selector)
                 .map(|e| {
                     let childs: Vec<ElementRef> = e.child_elements().collect();
-                    GradeData {
+                    dbg!(GradeData {
                         name: extract_string(childs.get(5).unwrap()),
                         point: extract_string(childs.get(8).unwrap()),
                         grade: extract_string(childs.get(9).unwrap()),
-                    }
+                    })
                 })
                 .collect())
         } else {
