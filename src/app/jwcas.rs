@@ -82,11 +82,11 @@ impl JwcasApplication {
                 .select(&selector)
                 .map(|e| {
                     let childs: Vec<ElementRef> = e.child_elements().collect();
-                    dbg!(GradeData {
+                    GradeData {
                         name: extract_string(childs.get(5).unwrap()),
                         point: extract_string(childs.get(8).unwrap()),
                         grade: extract_string(childs.get(9).unwrap()),
-                    })
+                    }
                 })
                 .collect())
         } else {
