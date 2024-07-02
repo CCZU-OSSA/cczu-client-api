@@ -3,13 +3,10 @@ use std::sync::Arc;
 use reqwest::{Client, ClientBuilder, Url};
 use reqwest_cookie_store::CookieStoreMutex;
 
-use crate::{
-    client::UserClient,
-    cookies_io::CookiesIOExt,
-    fields::{ROOT_SSO, ROOT_SSO_URL, ROOT_YWTB},
-    sso::universal_sso_login,
-};
-
+use super::session::universal_sso_login;
+use crate::base::client::UserClient;
+use crate::internal::cookies_io::CookiesIOExt;
+use crate::internal::fields::{ROOT_SSO, ROOT_SSO_URL, ROOT_YWTB};
 pub struct CommonClient {
     pub user: String,
     pub pwd: String,

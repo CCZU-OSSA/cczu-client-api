@@ -10,7 +10,6 @@ pub trait CookiesIOExt {
         cookies: impl Iterator<Item = ReqwestCookie<'a>>,
         reqwest_url: &Url,
     ) -> &mut Self;
-    fn debug_url_cookies(&self, url: &Url);
 }
 
 impl CookiesIOExt for CookieStore {
@@ -46,11 +45,5 @@ impl CookiesIOExt for CookieStore {
             self.add_reqwest_cookie(cookie, reqwest_url);
         });
         self
-    }
-
-    fn debug_url_cookies(&self, url: &Url) {
-        self.matches(url)
-            .iter()
-            .for_each(|e| println!("{}={}", e.name(), e.value()));
     }
 }

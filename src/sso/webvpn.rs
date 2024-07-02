@@ -1,10 +1,10 @@
-use crate::client::UserClient;
-use crate::cookies_io::CookiesIOExt;
-use crate::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
-use crate::sso::universal_sso_login;
-use crate::types::{
+use super::session::universal_sso_login;
+use super::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
 };
+use crate::base::client::UserClient;
+use crate::internal::cookies_io::CookiesIOExt;
+use crate::internal::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;

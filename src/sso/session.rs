@@ -5,12 +5,13 @@ use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 
-use crate::{
+use crate::internal::{
     cookies_io::CookiesIOExt,
     fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
     recursion::recursion_cookies_handle,
-    types::{LoginConnectType, UniversalSSOLogin},
 };
+
+use super::types::{LoginConnectType, UniversalSSOLogin};
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
     let mut hidden_values = HashMap::new();
