@@ -36,3 +36,5 @@ pub const WEBVPN_SERVER_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| {
 
     map
 });
+
+pub const WECHAT_APP_API: &'static str = "http://202.195.102.7:8180";

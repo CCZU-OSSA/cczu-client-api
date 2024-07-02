@@ -5,6 +5,8 @@ use reqwest_cookie_store::CookieStoreMutex;
 
 use crate::impl_auth_client;
 
+use super::app::Application;
+
 pub trait AuthClient {
     fn get_client(&self) -> Arc<Client>;
     fn get_client_mut(&mut self) -> Arc<Client>;
@@ -23,6 +25,7 @@ pub trait Redirect {
 }
 pub trait SSOClient: AuthClient + Redirect {}
 impl<T: AuthClient + Redirect> SSOClient for T {}
+#[derive(Clone)]
 pub struct SimpleClient {
     pub user: String,
     pub pwd: String,
@@ -59,5 +62,15 @@ impl SimpleClient {
             client,
             cookies,
         }
+    }
+}
+
+pub trait Visitor {
+    fn visit_application<T: Application>(&self) -> T;
+}
+
+impl Visitor for SimpleClient {
+    fn visit_application<T: Application>(&self) -> T {
+        T::from_client(Arc::new(self.clone()))
     }
 }
