@@ -1,3 +1,4 @@
+pub mod app;
 pub mod common;
 pub mod session;
 pub mod types;

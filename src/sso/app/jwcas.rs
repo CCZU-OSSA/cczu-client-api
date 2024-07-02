@@ -3,18 +3,17 @@ use std::{fmt::Display, sync::Arc};
 use reqwest::StatusCode;
 use scraper::{ElementRef, Html, Selector};
 
-use crate::client::UserClient;
+use crate::base::{app::SSOApplication, client::SSOClient};
 
-use super::{base::Application, jwcas_type::GradeData};
-
+use super::jwcas_type::GradeData;
 #[derive(Clone)]
 pub struct JwcasApplication {
-    client: Arc<dyn UserClient + Send + Sync>,
+    client: Arc<dyn SSOClient>,
     root: String,
 }
 
-impl Application for JwcasApplication {
-    fn from_client(client: Arc<dyn UserClient + Sync + Send>) -> Self {
+impl SSOApplication for JwcasApplication {
+    fn from_client(client: Arc<dyn SSOClient>) -> Self {
         let root = client.redirect("http://219.230.159.132");
         Self { client, root }
     }

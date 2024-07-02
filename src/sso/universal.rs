@@ -1,11 +1,16 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    base::{app::Application, client::UserClient},
-    sso::common::CommonClient,
-    sso::session::{is_webvpn_available, session_available, universal_sso_login},
-    sso::types::LoginConnectType,
-    sso::webvpn::WebVpnClient,
+    base::{
+        app::SSOApplication,
+        client::{AuthClient, Redirect, SSOClient},
+    },
+    sso::{
+        common::CommonClient,
+        session::{is_webvpn_available, session_available, universal_sso_login},
+        types::LoginConnectType,
+        webvpn::WebVpnClient,
+    },
 };
 use reqwest::{redirect::Policy, Client, ClientBuilder};
 use reqwest_cookie_store::CookieStoreMutex;
@@ -13,14 +18,11 @@ use reqwest_cookie_store::CookieStoreMutex;
 /// Universal Can chose the ClientType.
 #[derive(Clone)]
 pub struct UniversalClient {
-    client: Arc<Mutex<dyn UserClient>>,
+    client: Arc<Mutex<dyn SSOClient>>,
 }
 
-unsafe impl Send for UniversalClient {}
-unsafe impl Sync for UniversalClient {}
-
 impl UniversalClient {
-    pub fn new(client: Arc<Mutex<dyn UserClient>>) -> Self {
+    pub fn new(client: Arc<Mutex<dyn SSOClient>>) -> Self {
         Self { client }
     }
 
@@ -122,29 +124,25 @@ impl UniversalClient {
         };
     }
 
-    pub fn visitor(&self) -> Arc<Mutex<dyn UserClient>> {
+    pub fn visitor(&self) -> Arc<Mutex<dyn SSOClient>> {
         self.client.clone()
     }
 
     pub fn visit_application<T>(&self) -> T
     where
-        T: Application,
+        T: SSOApplication,
     {
         T::from_client(Arc::new(self.clone()))
     }
 }
 
-impl UserClient for UniversalClient {
+impl AuthClient for UniversalClient {
     fn get_cookies(&self) -> Arc<CookieStoreMutex> {
         self.client.lock().unwrap().get_cookies()
     }
 
     fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex> {
         self.client.lock().unwrap().get_cookies_mut()
-    }
-
-    fn redirect(&self, url: &str) -> String {
-        self.client.lock().unwrap().redirect(url)
     }
 
     fn get_client(&self) -> Arc<reqwest::Client> {
@@ -155,15 +153,21 @@ impl UserClient for UniversalClient {
         self.client.lock().unwrap().get_client_mut()
     }
 
-    fn initialize_url(&self, url: &str) {
-        self.client.lock().unwrap().initialize_url(url);
-    }
-
     fn get_user(&self) -> String {
         self.client.lock().unwrap().get_user()
     }
 
     fn get_pwd(&self) -> String {
         self.client.lock().unwrap().get_pwd()
+    }
+}
+
+impl Redirect for UniversalClient {
+    fn redirect(&self, url: &str) -> String {
+        self.client.lock().unwrap().redirect(url)
+    }
+
+    fn initialize_url(&self, url: &str) {
+        self.client.lock().unwrap().initialize_url(url);
     }
 }

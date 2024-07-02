@@ -2,7 +2,7 @@ use super::session::universal_sso_login;
 use super::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
 };
-use crate::base::client::UserClient;
+use crate::base::client::{AuthClient, Redirect};
 use crate::internal::cookies_io::CookiesIOExt;
 use crate::internal::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
@@ -294,24 +294,13 @@ impl WebVpnClient {
     }
 }
 
-impl UserClient for WebVpnClient {
+impl AuthClient for WebVpnClient {
     fn get_cookies(&self) -> Arc<CookieStoreMutex> {
         self.cookies.clone()
     }
 
     fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex> {
         self.cookies.clone()
-    }
-
-    fn redirect(&self, url: &str) -> String {
-        if let Some(url_plus) = WEBVPN_SERVER_MAP.get(url) {
-            return url_plus.clone();
-        }
-        if let Some(url_plus) = self.server_map.clone().unwrap().get(url) {
-            return url_plus.clone();
-        }
-
-        url.to_string()
     }
 
     fn get_client(&self) -> Arc<Client> {
@@ -322,18 +311,30 @@ impl UserClient for WebVpnClient {
         self.client.clone()
     }
 
-    fn initialize_url(&self, url: &str) {
-        self.get_cookies()
-            .lock()
-            .unwrap()
-            .copy_cookies(&ROOT_VPN_URL, &Url::parse(url).unwrap());
-    }
-
     fn get_user(&self) -> String {
         self.user.clone()
     }
 
     fn get_pwd(&self) -> String {
         self.pwd.clone()
+    }
+}
+
+impl Redirect for WebVpnClient {
+    fn redirect(&self, url: &str) -> String {
+        if let Some(url_plus) = WEBVPN_SERVER_MAP.get(url) {
+            return url_plus.clone();
+        }
+        if let Some(url_plus) = self.server_map.clone().unwrap().get(url) {
+            return url_plus.clone();
+        }
+
+        url.to_string()
+    }
+    fn initialize_url(&self, url: &str) {
+        self.get_cookies()
+            .lock()
+            .unwrap()
+            .copy_cookies(&ROOT_VPN_URL, &Url::parse(url).unwrap());
     }
 }

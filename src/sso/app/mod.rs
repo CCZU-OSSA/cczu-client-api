@@ -1,4 +1,3 @@
-pub mod base;
 pub mod jwcas;
 #[cfg(feature = "calendar")]
 pub mod jwcas_calendar;

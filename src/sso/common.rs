@@ -4,7 +4,7 @@ use reqwest::{Client, ClientBuilder, Url};
 use reqwest_cookie_store::CookieStoreMutex;
 
 use super::session::universal_sso_login;
-use crate::base::client::UserClient;
+use crate::base::client::{AuthClient, Redirect};
 use crate::internal::cookies_io::CookiesIOExt;
 use crate::internal::fields::{ROOT_SSO, ROOT_SSO_URL, ROOT_YWTB};
 pub struct CommonClient {
@@ -68,17 +68,13 @@ impl CommonClient {
     }
 }
 
-impl UserClient for CommonClient {
+impl AuthClient for CommonClient {
     fn get_cookies(&self) -> Arc<reqwest_cookie_store::CookieStoreMutex> {
         self.cookies.clone()
     }
 
     fn get_cookies_mut(&mut self) -> Arc<reqwest_cookie_store::CookieStoreMutex> {
         self.cookies.clone()
-    }
-
-    fn redirect(&self, url: &str) -> String {
-        url.to_string()
     }
 
     fn get_client(&self) -> std::sync::Arc<reqwest::Client> {
@@ -89,6 +85,16 @@ impl UserClient for CommonClient {
         self.client.clone()
     }
 
+    fn get_user(&self) -> String {
+        self.user.clone()
+    }
+
+    fn get_pwd(&self) -> String {
+        self.pwd.clone()
+    }
+}
+
+impl Redirect for CommonClient {
     fn initialize_url(&self, url: &str) {
         self.get_cookies()
             .lock()
@@ -96,11 +102,7 @@ impl UserClient for CommonClient {
             .copy_cookies_raw(&ROOT_SSO_URL, &Url::parse(url).unwrap());
     }
 
-    fn get_user(&self) -> String {
-        self.user.clone()
-    }
-
-    fn get_pwd(&self) -> String {
-        self.pwd.clone()
+    fn redirect(&self, url: &str) -> String {
+        url.to_string()
     }
 }
