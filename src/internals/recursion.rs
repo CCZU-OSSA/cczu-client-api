@@ -4,7 +4,7 @@ use async_recursion::async_recursion;
 use reqwest::{Client, Response, StatusCode, Url};
 use reqwest_cookie_store::CookieStoreMutex;
 
-use crate::internal::{cookies_io::CookiesIOExt, fields::DEFAULT_HEADERS};
+use crate::internals::{cookies_io::CookiesIOExt, fields::DEFAULT_HEADERS};
 
 #[async_recursion]
 pub async fn recursion_cookies_handle(

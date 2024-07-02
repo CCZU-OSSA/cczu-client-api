@@ -5,7 +5,7 @@ use reqwest::{redirect::Policy, Client, ClientBuilder, StatusCode};
 use reqwest_cookie_store::CookieStoreMutex;
 use scraper::{Html, Selector};
 
-use crate::internal::{
+use crate::internals::{
     cookies_io::CookiesIOExt,
     fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
     recursion::recursion_cookies_handle,

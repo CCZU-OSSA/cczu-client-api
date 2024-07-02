@@ -3,10 +3,9 @@ use std::sync::{Arc, Mutex};
 use crate::{
     base::{
         app::SSOApplication,
-        client::{AuthClient, Redirect, SSOClient},
+        client::{AuthClient, Redirect, SSOClient, SimpleClient},
     },
     sso::{
-        common::CommonClient,
         session::{is_webvpn_available, session_available, universal_sso_login},
         types::LoginConnectType,
         webvpn::WebVpnClient,
@@ -27,7 +26,7 @@ impl UniversalClient {
     }
 
     pub fn common(user: String, password: String) -> Self {
-        Self::new(Arc::new(Mutex::new(CommonClient::new(user, password))))
+        Self::new(Arc::new(Mutex::new(SimpleClient::new(user, password))))
     }
 
     pub fn webvpn(user: String, password: String) -> Self {
@@ -51,7 +50,7 @@ impl UniversalClient {
         user: String,
         password: String,
     ) -> Self {
-        Self::new(Arc::new(Mutex::new(CommonClient::from_custom(
+        Self::new(Arc::new(Mutex::new(SimpleClient::from_custom(
             client, cookies, user, password,
         ))))
     }

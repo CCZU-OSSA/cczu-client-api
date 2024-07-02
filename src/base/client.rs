@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use reqwest_cookie_store::CookieStoreMutex;
+
+use crate::impl_auth_client;
 
 pub trait AuthClient {
     fn get_client(&self) -> Arc<Client>;
@@ -21,4 +23,41 @@ pub trait Redirect {
 }
 pub trait SSOClient: AuthClient + Redirect {}
 impl<T: AuthClient + Redirect> SSOClient for T {}
-pub struct SimpleClient {}
+pub struct SimpleClient {
+    pub user: String,
+    pub pwd: String,
+    pub client: Arc<Client>,
+    pub cookies: Arc<CookieStoreMutex>,
+}
+
+impl_auth_client!(SimpleClient);
+impl SimpleClient {
+    pub fn new(user: String, pwd: String) -> Self {
+        let cookies = Arc::new(CookieStoreMutex::default());
+        Self {
+            user,
+            pwd,
+            client: Arc::new(
+                ClientBuilder::new()
+                    .cookie_provider(cookies.clone())
+                    .build()
+                    .unwrap(),
+            ),
+            cookies: cookies.clone(),
+        }
+    }
+
+    pub fn from_custom(
+        client: Arc<Client>,
+        cookies: Arc<CookieStoreMutex>,
+        user: String,
+        pwd: String,
+    ) -> Self {
+        Self {
+            user,
+            pwd,
+            client,
+            cookies,
+        }
+    }
+}

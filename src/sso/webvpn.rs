@@ -3,8 +3,9 @@ use super::types::{
     CbcAES128Enc, ElinkLoginInfo, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo,
 };
 use crate::base::client::{AuthClient, Redirect};
-use crate::internal::cookies_io::CookiesIOExt;
-use crate::internal::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
+use crate::impl_auth_client;
+use crate::internals::cookies_io::CookiesIOExt;
+use crate::internals::fields::{DEFAULT_HEADERS, ROOT_VPN, ROOT_VPN_URL, WEBVPN_SERVER_MAP};
 use aes::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
@@ -19,6 +20,8 @@ pub struct WebVpnClient {
     login_info: Option<ElinkLoginInfo>,
     server_map: Option<HashMap<String, String>>,
 }
+
+impl_auth_client!(WebVpnClient);
 
 impl WebVpnClient {
     pub fn new(user: String, pwd: String) -> Self {
@@ -291,32 +294,6 @@ impl WebVpnClient {
             }
         }
         Err("获取失败，请稍后重试".into())
-    }
-}
-
-impl AuthClient for WebVpnClient {
-    fn get_cookies(&self) -> Arc<CookieStoreMutex> {
-        self.cookies.clone()
-    }
-
-    fn get_cookies_mut(&mut self) -> Arc<CookieStoreMutex> {
-        self.cookies.clone()
-    }
-
-    fn get_client(&self) -> Arc<Client> {
-        self.client.clone()
-    }
-
-    fn get_client_mut(&mut self) -> Arc<Client> {
-        self.client.clone()
-    }
-
-    fn get_user(&self) -> String {
-        self.user.clone()
-    }
-
-    fn get_pwd(&self) -> String {
-        self.pwd.clone()
     }
 }
 
