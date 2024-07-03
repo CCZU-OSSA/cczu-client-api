@@ -24,11 +24,11 @@ pub struct WebVpnClient {
 impl_auth_client!(WebVpnClient);
 
 impl WebVpnClient {
-    pub fn new(user: String, pwd: String) -> Self {
+    pub fn new<S: Into<String>>(user: S, pwd: S) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
         Self {
-            user,
-            pwd,
+            user: user.into(),
+            pwd: pwd.into(),
             client: Arc::new(
                 Client::builder()
                     .cookie_provider(cookies.clone())
@@ -42,15 +42,15 @@ impl WebVpnClient {
         }
     }
 
-    pub fn from_custom(
+    pub fn from_custom<S: Into<String>>(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
-        user: String,
-        pwd: String,
+        user: S,
+        pwd: S,
     ) -> Self {
         Self {
-            user,
-            pwd,
+            user: user.into(),
+            pwd: pwd.into(),
             client,
             cookies,
             login_info: None,

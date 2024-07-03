@@ -25,37 +25,37 @@ impl UniversalClient {
         Self { client }
     }
 
-    pub fn common(user: String, password: String) -> Self {
+    pub fn common<S: Into<String>>(user: S, password: S) -> Self {
         Self::new(Arc::new(Mutex::new(SimpleClient::new(user, password))))
     }
 
-    pub fn webvpn(user: String, password: String) -> Self {
+    pub fn webvpn<S: Into<String>>(user: S, password: S) -> Self {
         Self::new(Arc::new(Mutex::new(WebVpnClient::new(user, password))))
     }
 
-    pub fn webvpn_custom(
+    pub fn webvpn_custom<S: Into<String>>(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
-        user: String,
-        password: String,
+        user: S,
+        password: S,
     ) -> Self {
         Self::new(Arc::new(Mutex::new(WebVpnClient::from_custom(
             client, cookies, user, password,
         ))))
     }
 
-    pub fn common_custom(
+    pub fn common_custom<S: Into<String>>(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
-        user: String,
-        password: String,
+        user: S,
+        password: S,
     ) -> Self {
         Self::new(Arc::new(Mutex::new(SimpleClient::from_custom(
             client, cookies, user, password,
         ))))
     }
 
-    pub async fn auto(user: String, password: String) -> Self {
+    pub async fn auto<S: Into<String>>(user: S, password: S) -> Self {
         if is_webvpn_available().await {
             Self::webvpn(user, password)
         } else {
@@ -88,7 +88,7 @@ impl UniversalClient {
         }
     }
 
-    pub async fn auto_login(user: String, password: String) -> Result<Self, String> {
+    pub async fn auto_login<S: Into<String> + Clone>(user: S, password: S) -> Result<Self, String> {
         let cookies = Arc::new(CookieStoreMutex::default());
         let client = Arc::new(
             ClientBuilder::new()

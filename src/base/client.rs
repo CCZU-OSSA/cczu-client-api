@@ -35,11 +35,11 @@ pub struct SimpleClient {
 
 impl_auth_client!(SimpleClient);
 impl SimpleClient {
-    pub fn new(user: String, pwd: String) -> Self {
+    pub fn new<S: Into<String>>(user: S, pwd: S) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
         Self {
-            user,
-            pwd,
+            user: user.into(),
+            pwd: pwd.into(),
             client: Arc::new(
                 ClientBuilder::new()
                     .cookie_provider(cookies.clone())
@@ -50,15 +50,15 @@ impl SimpleClient {
         }
     }
 
-    pub fn from_custom(
+    pub fn from_custom<S: Into<String>>(
         client: Arc<Client>,
         cookies: Arc<CookieStoreMutex>,
-        user: String,
-        pwd: String,
+        user: S,
+        pwd: S,
     ) -> Self {
         Self {
-            user,
-            pwd,
+            user: user.into(),
+            pwd: pwd.into(),
             client,
             cookies,
         }
