@@ -64,7 +64,7 @@ impl JwcasApplication {
         self.client.initialize_url(&api);
         if let Ok(response) = self.client.get_client().get(api).send().await {
             if response.status() != StatusCode::OK {
-                todo!()
+                None
             } else {
                 Some(response.text().await.unwrap())
             }
