@@ -19,6 +19,8 @@ use reqwest_cookie_store::CookieStoreMutex;
 pub struct UniversalClient {
     client: Arc<Mutex<dyn SSOClient>>,
 }
+unsafe impl Send for UniversalClient {}
+unsafe impl Sync for UniversalClient {}
 
 impl UniversalClient {
     pub fn new(client: Arc<Mutex<dyn SSOClient>>) -> Self {

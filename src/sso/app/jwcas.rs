@@ -8,12 +8,12 @@ use crate::base::{app::SSOApplication, client::SSOClient};
 use super::jwcas_type::GradeData;
 #[derive(Clone)]
 pub struct JwcasApplication {
-    client: Arc<dyn SSOClient>,
+    client: Arc<dyn SSOClient + Send + Sync>,
     root: String,
 }
 
 impl SSOApplication for JwcasApplication {
-    fn from_client(client: Arc<dyn SSOClient>) -> Self {
+    fn from_client(client: Arc<dyn SSOClient + Send + Sync>) -> Self {
         let root = client.redirect("http://219.230.159.132");
         Self { client, root }
     }

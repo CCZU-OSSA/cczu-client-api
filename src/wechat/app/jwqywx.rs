@@ -10,12 +10,12 @@ use crate::{
 use super::jwqywx_type::{CourseGrade, LoginUserData, Message};
 #[derive(Clone)]
 pub struct JwqywxApplication {
-    client: Arc<dyn AuthClient>,
+    client: Arc<dyn AuthClient + Send + Sync>,
     token: RefCell<String>,
 }
 
 impl Application for JwqywxApplication {
-    fn from_client(client: Arc<dyn AuthClient>) -> Self {
+    fn from_client(client: Arc<dyn AuthClient + Send + Sync>) -> Self {
         Self {
             client,
             token: RefCell::default(),

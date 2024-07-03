@@ -29,5 +29,8 @@ macro_rules! impl_auth_client {
                 self.pwd.clone()
             }
         }
+
+        unsafe impl Send for $name {}
+        unsafe impl Sync for $name {}
     };
 }

@@ -25,6 +25,7 @@ pub trait Redirect {
 }
 pub trait SSOClient: AuthClient + Redirect {}
 impl<T: AuthClient + Redirect> SSOClient for T {}
+
 #[derive(Clone)]
 pub struct SimpleClient {
     pub user: String,
