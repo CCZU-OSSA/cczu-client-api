@@ -4,7 +4,7 @@ use serde_json::json;
 
 use crate::{
     base::{app::Application, client::AuthClient},
-    internals::fields::WECHAT_APP_API,
+    internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
 
 use super::jwqywx_type::{CourseGrade, LoginUserData, Message};
@@ -30,6 +30,9 @@ impl JwqywxApplication {
             .clone()
             .get_client()
             .post(format!("{}/api/login", WECHAT_APP_API))
+            .headers(DEFAULT_HEADERS.clone())
+            .header("Referer", "http://jwqywx.cczu.edu.cn/")
+            .header("Origin", "http://jwqywx.cczu.edu.cn")
             .json(&json!({
                 "userid":self.client.get_user(),
                 "userpwd":self.client.get_pwd()
@@ -56,7 +59,10 @@ impl JwqywxApplication {
             .clone()
             .get_client()
             .post(format!("{}/api/cj_xh", WECHAT_APP_API))
-            .header("authorization", self.token.borrow().clone())
+            .headers(DEFAULT_HEADERS.clone())
+            .header("Authorization", self.token.borrow().clone())
+            .header("Referer", "http://jwqywx.cczu.edu.cn/")
+            .header("Origin", "http://jwqywx.cczu.edu.cn")
             .json(&json!({
                 "xh":self.client.get_user(),
             }))
