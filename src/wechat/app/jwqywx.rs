@@ -1,6 +1,6 @@
-use std::{cell::RefCell, sync::Arc};
-
 use serde_json::json;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::{
     base::{app::Application, client::AuthClient},
@@ -11,14 +11,14 @@ use super::jwqywx_type::{CourseGrade, LoginUserData, Message};
 #[derive(Clone)]
 pub struct JwqywxApplication {
     client: Arc<dyn AuthClient + Send + Sync>,
-    token: RefCell<String>,
+    token: Arc<Mutex<String>>,
 }
 
 impl Application for JwqywxApplication {
     fn from_client(client: Arc<dyn AuthClient + Send + Sync>) -> Self {
         Self {
             client,
-            token: RefCell::default(),
+            token: Arc::new(Mutex::new(String::new())),
         }
     }
 }
@@ -44,7 +44,7 @@ impl JwqywxApplication {
                 println!("{}", text);
                 let message = serde_json::from_str::<Message<LoginUserData>>(&text).unwrap();
                 {
-                    *self.token.borrow_mut() = format!("Bearer {}", message.token);
+                    *self.token.lock().await = format!("Bearer {}", message.token);
                     return Some(message);
                 }
             }
@@ -60,7 +60,7 @@ impl JwqywxApplication {
             .get_client()
             .post(format!("{}/api/cj_xh", WECHAT_APP_API))
             .headers(DEFAULT_HEADERS.clone())
-            .header("Authorization", self.token.borrow().clone())
+            .header("Authorization", self.token.lock().await.clone())
             .header("Referer", "http://jwqywx.cczu.edu.cn/")
             .header("Origin", "http://jwqywx.cczu.edu.cn")
             .json(&json!({

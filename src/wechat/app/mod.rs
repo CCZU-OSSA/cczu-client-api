@@ -7,7 +7,6 @@ mod jwqywx_test {
         base::client::{SimpleClient, Visitor},
         wechat::app::jwqywx::JwqywxApplication,
     };
-
     #[tokio::test]
     async fn test() {
         let client = SimpleClient::new("user", "pwd");
