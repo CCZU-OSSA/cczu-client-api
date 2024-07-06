@@ -41,7 +41,6 @@ impl JwqywxApplication {
             .await;
         if let Ok(response) = result {
             if let Ok(text) = response.text().await {
-                println!("{}", text);
                 let message = serde_json::from_str::<Message<LoginUserData>>(&text).unwrap();
                 {
                     *self.token.lock().await = format!("Bearer {}", message.token);
