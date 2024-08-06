@@ -4,7 +4,7 @@ use serde::Deserialize;
 pub struct Message<T> {
     pub status: i32,
     pub message: Vec<T>,
-    pub token: String,
+    pub token: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,4 +74,34 @@ pub struct CourseGrade {
     pub grade: f32,
     #[serde(rename = "xfjd")]
     pub grade_points: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct StudentPoint {
+    #[serde(rename = "nj")]
+    pub grade: String,
+    #[serde(rename = "bh")]
+    pub class_id: String,
+    #[serde(rename = "bj")]
+    pub class_name: String,
+    #[serde(rename = "xh")]
+    pub student_id: String,
+    #[serde(rename = "xm")]
+    pub student_name: String,
+    #[serde(rename = "xfjd")]
+    pub grade_points: String,
+    #[serde(rename = "pm")]
+    pub rank: String,
+    #[serde(rename = "zypm")]
+    pub major_rank: String,
+    #[serde(rename = "zxfjd")]
+    pub total_grade_points: String,
+    #[serde(rename = "zxf")]
+    pub total_credits: String,
+    #[serde(rename = "pjcjfx")]
+    pub average_credits: String,
+    #[serde(rename = "pjxfjd")]
+    pub average_grade_points: String,
+    #[serde(rename = "pjcj")]
+    pub average_grade: String,
 }

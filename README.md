@@ -9,3 +9,10 @@ cczu-client-api = { git = "https://github.com/CCZU-OSSA/cczu-client-api.git" }
 
 default-features:
  - calendar
+
+## About Account
+
+|Module|Account Type|
+|---|---|
+|sso|SSO|
+|wechat|EDU|
