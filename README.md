@@ -1,3 +1,6 @@
+> [!WARNING]  
+> This Lib is **DEPRECATED** now, please consider migrate to [CCZUNI](https://github.com/CCZU-OSSA/cczuni)
+
 # How to Use
 
 Edit in `Cargo.toml`.
